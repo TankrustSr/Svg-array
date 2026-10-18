@@ -1,0 +1,3056 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloraArray Studio v3.0 — Multi-Track SVG Layer Array & CAM Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        studio: {
+                            bg: '#0f1117',
+                            panel: '#171a24',
+                            card: '#1f2433',
+                            border: '#2c3347',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background-color: #0f1117;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #13161f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2e364d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 5px;
+            background: #282f42;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #06b6d4;
+            border: 2px solid #0f1117;
+            cursor: pointer;
+            transition: transform 0.1s ease, background-color 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #22d3ee;
+        }
+        .amber-slider::-webkit-slider-thumb {
+            background: #f59e0b !important;
+        }
+        .amber-slider::-webkit-slider-thumb:hover {
+            background: #fbbf24 !important;
+        }
+        .purple-slider::-webkit-slider-thumb {
+            background: #a855f7 !important;
+        }
+        .purple-slider::-webkit-slider-thumb:hover {
+            background: #c084fc !important;
+        }
+        .viewport-bg {
+            background-color: #0b0d13;
+            background-image: 
+                radial-gradient(#23293a 1px, transparent 1px),
+                linear-gradient(to right, rgba(35, 41, 58, 0.25) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(35, 41, 58, 0.25) 1px, transparent 1px);
+            background-size: 20px 20px, 100px 100px, 100px 100px;
+        }
+        .drop-active {
+            border-color: #06b6d4 !important;
+            background-color: rgba(6, 182, 212, 0.14) !important;
+        }
+        .track-selected {
+            border-color: #06b6d4 !important;
+            background-color: rgba(6, 182, 212, 0.10) !important;
+            box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.35);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col font-sans text-xs antialiased">
+
+    <!-- TOP HEADER BAR -->
+    <header class="h-12 bg-studio-panel border-b border-studio-border px-4 flex items-center justify-between shrink-0 z-20">
+        <!-- Brand -->
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-amber-500 p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+                <div class="w-full h-full bg-studio-bg rounded-[6px] flex items-center justify-center">
+                    <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 2C14.5 6 14.5 9 12 12C9.5 9 9.5 6 12 2Z"/>
+                        <path d="M12 22C14.5 18 14.5 15 12 12C9.5 15 9.5 18 12 22Z"/>
+                        <path d="M2 12C6 9.5 9 9.5 12 12C9 14.5 6 14.5 2 12Z"/>
+                        <path d="M22 12C18 9.5 15 9.5 12 12C15 14.5 18 14.5 22 12Z"/>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-sm tracking-tight text-white">FloraArray Studio</h1>
+                    <span class="px-1.5 py-0.5 text-[10px] font-mono uppercase bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 rounded">Multi-Track v3.0</span>
+                </div>
+                <p class="text-[11px] text-slate-400 hidden lg:block">Per-Shape Layer Tracks, Radial Zone Compositor & LightBurn CAM Generator</p>
+            </div>
+        </div>
+
+        <!-- Center Toolbar: Active Layer Seed & Global Randomize Controls -->
+        <div class="flex items-center gap-2 bg-studio-bg px-2.5 py-1.5 rounded-lg border border-studio-border">
+            <span class="text-slate-400 font-mono text-[10px] uppercase">Track Seed:</span>
+            <input id="trackSeedInput" type="number" value="1042" class="w-16 bg-studio-card border border-studio-border rounded px-1.5 py-0.5 font-mono text-cyan-400 text-center focus:outline-none focus:border-cyan-400">
+            <button id="btnRerollTrackSeed" title="Re-roll only the selected Shape Layer's random placement" class="px-2 py-1 rounded bg-studio-card hover:bg-slate-700 text-cyan-300 border border-studio-border flex items-center gap-1 transition">
+                <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>
+                </svg>
+                <span>Re-Roll Track</span>
+            </button>
+            <button id="btnRandomizeAllSeeds" title="Randomize seeds for all unlocked Shape Layers" class="px-2 py-1 rounded bg-studio-card hover:bg-slate-700 text-slate-200 border border-studio-border flex items-center gap-1 transition">
+                <span>All Tracks</span>
+            </button>
+            <div class="h-4 w-[1px] bg-studio-border mx-0.5"></div>
+            <button id="btnMutateSelectedTrack" title="Mutate organic jitter & warping on the active track (or all if Global Link is on)" class="px-2.5 py-1 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 flex items-center gap-1 transition">
+                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6l2.1-2.1"/>
+                </svg>
+                <span>Mutate Organic</span>
+            </button>
+        </div>
+
+        <!-- Export Actions -->
+        <div class="flex items-center gap-2">
+            <button id="btnExportSelectedTrackSVG" title="Export only the currently selected Shape Layer as an SVG" class="px-2.5 py-1.5 rounded-lg bg-studio-card hover:bg-slate-700 text-cyan-300 border border-studio-border font-medium flex items-center gap-1.5 transition">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="hidden xl:inline">Export Selected Track</span>
+            </button>
+            <button id="btnExportModalOpen" class="px-2.5 py-1.5 rounded-lg bg-studio-card hover:bg-slate-700 text-slate-200 border border-studio-border font-medium flex items-center gap-1.5 transition">
+                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                    <polyline points="2 17 12 22 22 17"/>
+                    <polyline points="2 12 12 17 22 12"/>
+                </svg>
+                <span class="hidden md:inline">Layer Breakdown</span>
+            </button>
+            <button id="btnExportMasterSVG" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-slate-950 font-semibold flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Export Combined SVG</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- LEFT SIDEBAR: SHAPE LAYERS MANAGER & WORKPIECE SETUP -->
+        <aside class="w-88 bg-studio-panel border-r border-studio-border flex flex-col shrink-0 select-none overflow-y-auto" style="width: 350px;">
+            
+            <!-- 1. SHAPE LAYERS MANAGER -->
+            <div class="p-3.5 border-b border-studio-border flex flex-col">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                        1. Shape Layers Manager
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <button id="btnAddBuiltInMenu" class="text-[11px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 transition">+ Add Built-in</button>
+                        <button id="btnResetStarterTracks" class="text-[11px] text-slate-400 hover:text-cyan-400">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Built-in Motif Quick Adder Dropdown (Hidden by default) -->
+                <div id="builtInAdderBox" class="hidden mb-2.5 p-2 rounded-xl bg-studio-bg border border-studio-border space-y-1.5">
+                    <div class="text-[10px] text-slate-400 font-mono uppercase">Click to Add New Shape Layer Track:</div>
+                    <div id="builtInPickerGrid" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+
+                <!-- Drag and Drop SVG Importer -->
+                <label id="svgDropZone" class="border-2 border-dashed border-studio-border hover:border-cyan-500/60 bg-studio-bg/60 rounded-xl p-2.5 flex items-center justify-center gap-2.5 cursor-pointer transition group mb-2.5">
+                    <input id="svgFileInput" type="file" accept=".svg" multiple class="hidden">
+                    <div class="w-7 h-7 rounded-full bg-studio-card border border-studio-border flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-slate-200 font-medium text-[11px]">Import <code class="text-cyan-400">.svg</code> as New Shape Layer(s)</div>
+                        <div class="text-[10px] text-slate-400">Each file gets its own array & LightBurn track</div>
+                    </div>
+                </label>
+
+                <!-- Cross-Layer Collision Avoidance Toggle -->
+                <div class="p-2 rounded-xl bg-studio-card/70 border border-studio-border mb-2.5 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-200 font-medium text-[11px]" title="Lower tracks in the stack automatically avoid colliding with shapes placed by upper tracks">
+                            <input id="chkCrossLayerAvoid" type="checkbox" checked class="rounded bg-studio-bg border-studio-border text-cyan-500">
+                            <span>Cross-Layer Collision Avoidance</span>
+                        </label>
+                        <span class="text-[10px] font-mono text-emerald-400 px-1.5 py-0.2 bg-emerald-500/10 rounded border border-emerald-500/30">Priority Stack</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-[10px] text-slate-400">
+                        <span>Inter-Shape Buffer Padding:</span>
+                        <div class="flex items-center gap-1.5">
+                            <input id="sliderGlobalPadding" type="range" min="-35" max="60" value="4" class="w-24">
+                            <span id="valGlobalPadding" class="font-mono text-cyan-400 w-9 text-right">+4%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Track List Header -->
+                <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono uppercase mb-1.5 px-0.5">
+                    <span id="trackCountReadout">3 SHAPE TRACKS (TOP = HIGHEST PRIORITY)</span>
+                    <button id="btnClearSolo" class="text-amber-400 hover:underline hidden">Clear Solo</button>
+                </div>
+
+                <!-- Interactive Shape Layers Stack -->
+                <div id="shapeTracksContainer" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- 2. WORKPIECE & BED SETUP -->
+            <div class="p-3.5 border-b border-studio-border space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        2. Workpiece & Bed Size
+                    </span>
+                    <select id="unitSelect" class="bg-studio-card border border-studio-border rounded px-1.5 py-0.5 font-mono text-[11px] text-cyan-400">
+                        <option value="mm">mm (Metric)</option>
+                        <option value="in">in (Imperial)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Bed Preset</label>
+                        <select id="bedPresetSelect" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 text-slate-200">
+                            <option value="300x300">300 × 300 mm (12×12")</option>
+                            <option value="200x200">200 × 200 mm (8×8")</option>
+                            <option value="400x400">400 × 400 mm (16×16")</option>
+                            <option value="210x297">A4 Portrait (210×297)</option>
+                            <option value="297x210">A4 Landscape (297×210)</option>
+                            <option value="297x420">A3 Portrait (297×420)</option>
+                            <option value="custom">Custom Dimensions</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Boundary Shape</label>
+                        <select id="boundaryShapeSelect" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 text-slate-200">
+                            <option value="circle">Circular Mandala / Dish</option>
+                            <option value="rect">Rectangular Sheet</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Width (mm)</label>
+                        <input id="canvasWidthInput" type="number" value="300" min="20" max="2000" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 font-mono text-slate-200">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Height (mm)</label>
+                        <input id="canvasHeightInput" type="number" value="300" min="20" max="2000" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 font-mono text-slate-200">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Margin (mm)</label>
+                        <input id="canvasMarginInput" type="number" value="15" min="0" max="150" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 font-mono text-slate-200">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-0.5">
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input id="chkClipBoundary" type="checkbox" class="rounded bg-studio-card border-studio-border text-cyan-500">
+                        <span>Hard-Clip Paths at Margin</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input id="chkExportFrame" type="checkbox" class="rounded bg-studio-card border-studio-border text-cyan-500">
+                        <span>Cut Outer Frame</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3. VIEWPORT & LIGHTBURN PALETTE FILTER -->
+            <div class="p-3.5 space-y-2.5 flex-1">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        3. Global Lens, Pen & Palette
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <span class="text-slate-400">Pen / Kerf Width</span>
+                            <span id="valStrokeWidth" class="font-mono text-cyan-400">0.40mm</span>
+                        </div>
+                        <input id="sliderStrokeWidth" type="range" min="0.1" max="2.0" step="0.05" value="0.4">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Surface Preview</label>
+                        <select id="surfaceThemeSelect" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 text-slate-200 text-[11px]">
+                            <option value="dark">Dark CAD Studio</option>
+                            <option value="paper">Archival White Paper</option>
+                            <option value="birch">Baltic Birch Wood</option>
+                            <option value="blueprint">Cyanotype Blueprint</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-slate-400">Global Canvas Fisheye / Dome Lens</span>
+                        <span id="valGlobalLens" class="font-mono text-cyan-400">0%</span>
+                    </div>
+                    <input id="sliderGlobalLens" type="range" min="-75" max="75" value="0">
+                </div>
+
+                <!-- LightBurn Color Visibility Filter -->
+                <div class="space-y-1.5 pt-1">
+                    <div class="text-[10px] text-slate-400 flex justify-between">
+                        <span>LIGHTBURN COLOR PALETTE (C00–C07)</span>
+                        <button id="btnShowAllPalette" class="text-cyan-400 hover:underline">Show All</button>
+                    </div>
+                    <div id="layerPaletteList" class="grid grid-cols-4 gap-1.5">
+                        <!-- Dynamically rendered C00-C07 -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER VIEWPORT WITH PHYSICAL MILLIMETER RULERS -->
+        <main class="flex-1 flex flex-col viewport-bg relative overflow-hidden">
+            
+            <!-- Top Floating Viewport Bar: Multi-Track Scene Compositions -->
+            <div class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
+                <div class="flex items-center gap-1.5 bg-studio-panel/95 backdrop-blur-md border border-studio-border p-1.5 rounded-xl pointer-events-auto shadow-xl flex-wrap">
+                    <span class="text-[10px] font-mono uppercase text-slate-400 px-1.5">Multi-Layer Scenes:</span>
+                    <button data-scene="botanical_sanctuary" class="scene-btn px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-medium transition hover:bg-cyan-500/30">
+                        Botanical Sanctuary (3-Track)
+                    </button>
+                    <button data-scene="meadow_hierarchy" class="scene-btn px-2.5 py-1 rounded-lg hover:bg-studio-card text-slate-300 transition">
+                        Wildflower Meadow Hierarchy
+                    </button>
+                    <button data-scene="sacred_kaleido" class="scene-btn px-2.5 py-1 rounded-lg hover:bg-studio-card text-slate-300 transition">
+                        Sacred Kaleido & Spiral
+                    </button>
+                    <button data-scene="windswept_tapestry" class="scene-btn px-2.5 py-1 rounded-lg hover:bg-studio-card text-slate-300 transition">
+                        Windswept Tapestry
+                    </button>
+                </div>
+
+                <!-- Zoom & View Controls -->
+                <div class="flex items-center gap-1 bg-studio-panel/95 backdrop-blur-md border border-studio-border p-1 rounded-xl pointer-events-auto shadow-xl shrink-0">
+                    <label class="flex items-center gap-1.5 px-2 text-[10px] text-slate-300 cursor-pointer" title="Show radial inner/outer zone rings for the active track">
+                        <input id="chkShowZoneGuides" type="checkbox" checked class="rounded bg-studio-card border-studio-border text-cyan-500">
+                        <span>Zone Guides</span>
+                    </label>
+                    <div class="h-4 w-[1px] bg-studio-border mx-0.5"></div>
+                    <button id="btnZoomOut" title="Zoom Out" class="p-1.5 hover:bg-studio-card rounded-lg text-slate-300">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <span id="zoomReadout" class="font-mono text-[11px] text-cyan-400 px-1.5 min-w-[48px] text-center">100%</span>
+                    <button id="btnZoomIn" title="Zoom In" class="p-1.5 hover:bg-studio-card rounded-lg text-slate-300">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <button id="btnFitScreen" class="px-2 py-1 hover:bg-studio-card rounded-lg text-slate-300 text-[11px] font-mono">Fit Bed</button>
+                </div>
+            </div>
+
+            <!-- Interactive HTML5 Canvas -->
+            <div id="canvasWrapper" class="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing">
+                <canvas id="previewCanvas" class="block w-full h-full"></canvas>
+            </div>
+
+            <!-- Live Per-Track Summary Bar -->
+            <div id="layerSummaryPills" class="bg-studio-panel/90 border-t border-studio-border px-3 py-1.5 flex items-center gap-2 overflow-x-auto z-10">
+                <!-- Populated dynamically with per-track color swatch & instance/path telemetry -->
+            </div>
+
+            <!-- Bottom Floating Telemetry & Plotter Stats Bar -->
+            <div class="h-8 bg-studio-bg border-t border-studio-border px-4 flex items-center justify-between text-[11px] font-mono text-slate-400 z-10">
+                <div class="flex items-center gap-5">
+                    <div>TOTAL INSTANCES: <span id="statInstances" class="text-white font-semibold">0</span></div>
+                    <div>VECTOR PATHS: <span id="statPaths" class="text-cyan-400 font-semibold">0</span></div>
+                    <div>NODES: <span id="statVertices" class="text-amber-400 font-semibold">0</span></div>
+                    <div class="hidden md:block">EST. PLOT/CUT TRAVEL: <span id="statCutLength" class="text-emerald-400 font-semibold">0.00 m</span></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="statusBanner" class="text-cyan-400 truncate max-w-xs">Ready · Multi-Track CAM Engine</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR: INSPECTOR FOR SELECTED SHAPE LAYER TRACK (OR GLOBAL LINK) -->
+        <aside class="w-92 bg-studio-panel border-l border-studio-border flex flex-col shrink-0 select-none overflow-y-auto" style="width: 365px;">
+            
+            <!-- ACTIVE LAYER INSPECTOR HEADER -->
+            <div class="p-3 bg-studio-bg/90 border-b border-studio-border sticky top-0 z-10 space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span id="inspectorColorDot" class="w-3.5 h-3.5 rounded-full bg-cyan-400 border border-white/30 shrink-0"></span>
+                        <div class="truncate">
+                            <div class="text-[10px] font-mono uppercase text-cyan-400 leading-none">Inspecting Track</div>
+                            <div id="inspectorTrackTitle" class="text-xs font-bold text-white truncate mt-0.5">Layer 1: Sacred Lotus</div>
+                        </div>
+                    </div>
+                    <button id="btnCopyTrackToAll" title="Copy the current track's array, jitter & warping settings to all other tracks" class="px-2 py-1 rounded bg-studio-card hover:bg-slate-700 text-slate-300 border border-studio-border text-[10px] font-mono shrink-0 transition">
+                        Copy → All
+                    </button>
+                </div>
+
+                <!-- Global Link Toggle -->
+                <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-studio-card border border-studio-border">
+                    <label class="flex items-center gap-2 cursor-pointer text-[11px] font-medium text-slate-200">
+                        <input id="chkGlobalLinkEdit" type="checkbox" class="rounded bg-studio-bg border-studio-border text-amber-500">
+                        <span>Global Link (Edit All Tracks Together)</span>
+                    </label>
+                    <span id="editScopeBadge" class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">Single Track</span>
+                </div>
+            </div>
+
+            <!-- SECTION 4: TRACK LIGHTBURN COLOR & SUB-LAYER MAPPING -->
+            <div class="p-3.5 border-b border-studio-border space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        4. Track LightBurn / Pen Color
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Color Assignment Mode</label>
+                        <select id="trackColorModeSelect" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1.5 text-slate-200">
+                            <option value="single">Single Layer Color</option>
+                            <option value="preserve_offset">Preserve SVG Sub-Layers</option>
+                            <option value="radial_split">Split Rings Across Colors</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Base LightBurn Layer</label>
+                        <select id="trackBaseColorSelect" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1.5 font-mono text-slate-200">
+                            <option value="0">C00 Black (#000000)</option>
+                            <option value="1">C01 Blue (#0000FF)</option>
+                            <option value="2">C02 Red (#FF0000)</option>
+                            <option value="3">C03 Green (#00E000)</option>
+                            <option value="4">C04 Orange (#FF8000)</option>
+                            <option value="5">C05 Purple (#800080)</option>
+                            <option value="6">C06 Cyan (#00E0E0)</option>
+                            <option value="7">C07 Magenta (#FF00FF)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: PER-SHAPE ARRAY MODE, DENSITY & RADIAL BOUNDS -->
+            <div class="p-3.5 border-b border-studio-border space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                        5. Track Array & Zone Bounds
+                    </span>
+                </div>
+
+                <!-- 5-Mode Selector Tabs for Active Track -->
+                <div class="grid grid-cols-5 gap-1 bg-studio-bg p-1 rounded-xl border border-studio-border">
+                    <button data-mode="meadow" class="mode-tab py-1.5 px-1 rounded-lg text-center font-medium text-[11px] bg-cyan-500 text-slate-950 font-semibold transition">
+                        Meadow
+                    </button>
+                    <button data-mode="kaleidoscope" class="mode-tab py-1.5 px-1 rounded-lg text-center font-medium text-[11px] text-slate-300 hover:text-white transition">
+                        Kaleido
+                    </button>
+                    <button data-mode="radial" class="mode-tab py-1.5 px-1 rounded-lg text-center font-medium text-[11px] text-slate-300 hover:text-white transition">
+                        Mandala
+                    </button>
+                    <button data-mode="phyllotaxis" class="mode-tab py-1.5 px-1 rounded-lg text-center font-medium text-[11px] text-slate-300 hover:text-white transition">
+                        Spiral
+                    </button>
+                    <button data-mode="grid" class="mode-tab py-1.5 px-1 rounded-lg text-center font-medium text-[11px] text-slate-300 hover:text-white transition">
+                        Hex/Grid
+                    </button>
+                </div>
+
+                <!-- Track Density, Size & Minimum Spacing -->
+                <div class="bg-studio-card/70 p-2.5 rounded-xl border border-studio-border space-y-2.5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-200 font-medium">Track Density / Target Count</span>
+                            <span id="valDensity" class="font-mono text-cyan-400 font-semibold">48 shapes</span>
+                        </div>
+                        <input id="sliderDensity" type="range" min="1" max="500" value="48">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-200 font-medium">Base Size (mm)</span>
+                                <span id="valBaseSize" class="font-mono text-cyan-400 font-semibold">26 mm</span>
+                            </div>
+                            <input id="sliderBaseSize" type="range" min="3" max="140" step="0.5" value="26">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-200 font-medium">Min Spacing</span>
+                                <span id="valMinSpacing" class="font-mono text-cyan-400 font-semibold">16 mm</span>
+                            </div>
+                            <input id="sliderMinSpacing" type="range" min="0" max="90" step="0.5" value="16">
+                        </div>
+                    </div>
+
+                    <!-- Inner & Outer Radial Zone Bounds (mm) -->
+                    <div class="pt-1 border-t border-studio-border/70 grid grid-cols-2 gap-2.5">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-300 text-[11px]">Inner Radius (mm)</span>
+                                <span id="valInnerRadius" class="font-mono text-cyan-400">0 mm</span>
+                            </div>
+                            <input id="sliderInnerRadius" type="range" min="0" max="250" step="1" value="0">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-300 text-[11px]">Outer Radius (mm)</span>
+                                <span id="valOuterRadius" class="font-mono text-cyan-400">135 mm</span>
+                            </div>
+                            <input id="sliderOuterRadius" type="range" min="10" max="300" step="1" value="135">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mode-Specific Sub-Controls -->
+                <!-- Meadow Sub-Controls -->
+                <div id="subControls_meadow" class="mode-subpanel space-y-2">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">Organic Patch Clumping</span>
+                            <span id="valMeadowClump" class="font-mono text-cyan-400">20%</span>
+                        </div>
+                        <input id="sliderMeadowClump" type="range" min="0" max="100" value="20">
+                    </div>
+                </div>
+
+                <!-- Kaleidoscope Sub-Controls -->
+                <div id="subControls_kaleidoscope" class="mode-subpanel hidden space-y-2.5">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-400">Symmetry Wedges</span>
+                                <span id="valKaleidoWedges" class="font-mono text-cyan-400">12</span>
+                            </div>
+                            <input id="sliderKaleidoWedges" type="range" min="4" max="36" step="2" value="12">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-400">Concentric Tiers</span>
+                                <span id="valKaleidoRings" class="font-mono text-cyan-400">3</span>
+                            </div>
+                            <input id="sliderKaleidoRings" type="range" min="1" max="12" value="3">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">Chamber Twist / Phase (°)</span>
+                            <span id="valKaleidoTwist" class="font-mono text-cyan-400">15°</span>
+                        </div>
+                        <input id="sliderKaleidoTwist" type="range" min="-180" max="180" value="15">
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input id="chkKaleidoMirror" type="checkbox" checked class="rounded bg-studio-card border-studio-border text-cyan-500">
+                        <span>True Dihedral Mirror Reflection ($D_n$)</span>
+                    </label>
+                </div>
+
+                <!-- Radial Mandala Sub-Controls -->
+                <div id="subControls_radial" class="mode-subpanel hidden space-y-2.5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">Concentric Ring Count</span>
+                            <span id="valRadialRings" class="font-mono text-cyan-400">3</span>
+                        </div>
+                        <input id="sliderRadialRings" type="range" min="1" max="14" value="3">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                            <input id="chkRadialAlternate" type="checkbox" checked class="rounded bg-studio-card border-studio-border text-cyan-500">
+                            <span>Half-Step Phase Brick Offset</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                            <input id="chkRadialCenterStar" type="checkbox" class="rounded bg-studio-card border-studio-border text-cyan-500">
+                            <span>Center Rosette</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Phyllotaxis Spiral Sub-Controls -->
+                <div id="subControls_phyllotaxis" class="mode-subpanel hidden space-y-2.5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">Divergence Angle (°)</span>
+                            <span id="valSpiralAngle" class="font-mono text-cyan-400">137.5°</span>
+                        </div>
+                        <input id="sliderSpiralAngle" type="range" min="130" max="145" step="0.05" value="137.5">
+                    </div>
+                </div>
+
+                <!-- Linear / Hex Grid Sub-Controls -->
+                <div id="subControls_grid" class="mode-subpanel hidden space-y-2.5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">Row Hex / Brick Shift</span>
+                            <span id="valGridHexShift" class="font-mono text-cyan-400">50%</span>
+                        </div>
+                        <input id="sliderGridHexShift" type="range" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <!-- Per-Track Self Collision Toggle -->
+                <div class="pt-1 border-t border-studio-border/60 flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input id="chkTrackAvoidSelf" type="checkbox" checked class="rounded bg-studio-card border-studio-border text-cyan-500">
+                        <span>Avoid Self-Overlap Within This Track</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- SECTION 6: PER-SHAPE HUMAN RANDOMNESS & ORIENTATION -->
+            <div class="p-3.5 border-b border-studio-border space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        6. Track Randomness & Rotation
+                    </span>
+                    <button id="btnZeroTrackJitter" class="text-[11px] text-slate-400 hover:text-cyan-400">Reset Strict</button>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">Position Drift / Jitter (mm)</span>
+                        <span id="valPosJitter" class="font-mono text-amber-400">2.0 mm</span>
+                    </div>
+                    <input id="sliderPosJitter" type="range" min="0" max="45" step="0.5" value="2" class="amber-slider">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300">Scale Jitter ±</span>
+                            <span id="valScaleJitter" class="font-mono text-amber-400">25%</span>
+                        </div>
+                        <input id="sliderScaleJitter" type="range" min="0" max="90" value="25" class="amber-slider">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300">Edge Scale Falloff</span>
+                            <span id="valRadialScale" class="font-mono text-amber-400">-15%</span>
+                        </div>
+                        <input id="sliderRadialScale" type="range" min="-80" max="80" value="-15" class="amber-slider">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Rotation Mode</label>
+                        <select id="orientationModeSelect" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 text-slate-200">
+                            <option value="outward">Follow Radial Outward</option>
+                            <option value="inward">Follow Radial Inward</option>
+                            <option value="tangent">Tangent Spiral Flow</option>
+                            <option value="random">Random 360° Spin</option>
+                            <option value="fixed">Fixed Angle</option>
+                            <option value="kaleido">Kaleido Mirrored</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Mirror X/Y Mode</label>
+                        <select id="mirrorModeSelect" class="w-full bg-studio-card border border-studio-border rounded px-2 py-1 text-slate-200">
+                            <option value="random_x">Probabilistic Flip X</option>
+                            <option value="random_xy">Probabilistic Flip X&Y</option>
+                            <option value="alternate">Alternate Instances</option>
+                            <option value="none">No Mirroring</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300 text-[10px]">Fixed Angle</span>
+                            <span id="valFixedAngle" class="font-mono text-amber-400 text-[10px]">0°</span>
+                        </div>
+                        <input id="sliderFixedAngle" type="range" min="-180" max="180" value="0" class="amber-slider">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300 text-[10px]">Angle Jitter</span>
+                            <span id="valRotJitter" class="font-mono text-amber-400 text-[10px]">±15°</span>
+                        </div>
+                        <input id="sliderRotJitter" type="range" min="0" max="180" value="15" class="amber-slider">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300 text-[10px]">Mirror Prob</span>
+                            <span id="valMirrorProb" class="font-mono text-amber-400 text-[10px]">50%</span>
+                        </div>
+                        <input id="sliderMirrorProb" type="range" min="0" max="100" value="50" class="amber-slider">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 7: PER-SHAPE NON-LINEAR GEOMETRIC WARPING -->
+            <div class="p-3.5 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                        7. Track Path Warping (Baked)
+                    </span>
+                    <button id="btnZeroTrackWarp" class="text-[11px] text-slate-400 hover:text-cyan-400">Zero Warp</button>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">Wind Sway / Stem Bend</span>
+                        <span id="valWarpBend" class="font-mono text-purple-400">15%</span>
+                    </div>
+                    <input id="sliderWarpBend" type="range" min="-100" max="100" value="15" class="purple-slider">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300">Organic Wobble</span>
+                            <span id="valWarpWave" class="font-mono text-purple-400">10%</span>
+                        </div>
+                        <input id="sliderWarpWave" type="range" min="0" max="100" value="10" class="purple-slider">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300">Wave Frequency</span>
+                            <span id="valWarpFreq" class="font-mono text-purple-400">3.0x</span>
+                        </div>
+                        <input id="sliderWarpFreq" type="range" min="1" max="10" step="0.5" value="3.0" class="purple-slider">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300">Petal Bulge / Pinch</span>
+                            <span id="valWarpBulge" class="font-mono text-purple-400">0%</span>
+                        </div>
+                        <input id="sliderWarpBulge" type="range" min="-80" max="80" value="0" class="purple-slider">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-300">Aspect Squash ±</span>
+                            <span id="valWarpSquash" class="font-mono text-purple-400">12%</span>
+                        </div>
+                        <input id="sliderWarpSquash" type="range" min="0" max="60" value="12" class="purple-slider">
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- MODAL FOR PER-TRACK & PER-COLOR SVG BREAKDOWN EXPORT -->
+    <div id="layerExportModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-studio-panel border border-studio-border rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-studio-border pb-3">
+                <div>
+                    <h3 class="text-sm font-bold text-white">Export Individual Track or Color Layer SVGs</h3>
+                    <p class="text-[11px] text-slate-400">Download isolated SVG files by Shape Layer Track or by LightBurn Cut Color</p>
+                </div>
+                <button id="btnCloseLayerModal" class="p-1 text-slate-400 hover:text-white">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div id="modalLayerDownloadList" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="pt-2 border-t border-studio-border flex justify-between items-center">
+                <span class="text-[10px] text-slate-400 font-mono">All files include physical mm dimensions & Inkscape/LightBurn layer tags</span>
+                <button id="btnCloseLayerModalBottom" class="px-3 py-1.5 rounded-lg bg-studio-card text-slate-300 hover:bg-slate-700">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OFFSCREEN DIV SANDBOX FOR SVG GEOMETRY NORMALIZATION -->
+    <div id="svgGeometrySandbox" style="position:fixed; left:-9999px; top:-9999px; width:200px; height:200px; opacity:0; pointer-events:none; overflow:hidden;"></div>
+
+    <script>
+        /**************************************************************************
+         * FLORAARRAY STUDIO v3.0 — MULTI-TRACK LAYER ARCHITECTURE & CAM ENGINE
+         **************************************************************************/
+
+        // Standard LightBurn Color Palette (C00 - C07) with requested hex codes
+        const LIGHTBURN_PALETTE = [
+            { idx: 0, id: 'C00', name: 'C00 Black',   hex: '#000000', previewDark: '#38bdf8', previewPaper: '#0f172a', active: true },
+            { idx: 1, id: 'C01', name: 'C01 Blue',    hex: '#0000FF', previewDark: '#60a5fa', previewPaper: '#1d4ed8', active: true },
+            { idx: 2, id: 'C02', name: 'C02 Red',     hex: '#FF0000', previewDark: '#f87171', previewPaper: '#dc2626', active: true },
+            { idx: 3, id: 'C03', name: 'C03 Green',   hex: '#00E000', previewDark: '#4ade80', previewPaper: '#15803d', active: true },
+            { idx: 4, id: 'C04', name: 'C04 Orange',  hex: '#FF8000', previewDark: '#fb923c', previewPaper: '#ea580c', active: true },
+            { idx: 5, id: 'C05', name: 'C05 Purple',  hex: '#800080', previewDark: '#c084fc', previewPaper: '#7e22ce', active: true },
+            { idx: 6, id: 'C06', name: 'C06 Cyan',    hex: '#00E0E0', previewDark: '#2dd4bf', previewPaper: '#0d9488', active: true },
+            { idx: 7, id: 'C07', name: 'C07 Magenta', hex: '#FF00FF', previewDark: '#f472b6', previewPaper: '#be185d', active: true }
+        ];
+
+        // Built-in Multi-Layer Botanical & Geometric Motifs
+        const BUILTIN_MOTIFS = [
+            {
+                key: 'lotus',
+                name: 'Sacred Layered Lotus',
+                svgText: `<svg viewBox="-50 -50 100 100">
+                    <g stroke="#000000" fill="none">
+                        <path d="M 0 -46 C 14 -30 18 -12 0 10 C -18 -12 -14 -30 0 -46 Z"/>
+                        <path d="M 0 -46 C 26 -36 36 -14 8 10 C 18 -10 12 -28 0 -46 Z"/>
+                        <path d="M 0 -46 C -26 -36 -36 -14 -8 10 C -18 -10 -12 -28 0 -46 Z"/>
+                        <path d="M 12 10 C 38 -6 46 -26 26 -36 C 28 -18 22 -2 12 10 Z"/>
+                        <path d="M -12 10 C -38 -6 -46 -26 -26 -36 C -28 -18 -22 -2 -12 10 Z"/>
+                        <path d="M -22 14 C -10 26 10 26 22 14 C 12 34 -12 34 -22 14 Z"/>
+                    </g>
+                    <g stroke="#0000FF" fill="none">
+                        <path d="M 0 -34 C 7 -22 7 -10 0 4 C -7 -10 -7 -22 0 -34 Z"/>
+                        <line x1="0" y1="-26" x2="0" y2="2"/>
+                        <line x1="-14" y1="-22" x2="-4" y2="4"/>
+                        <line x1="14" y1="-22" x2="4" y2="4"/>
+                        <circle cx="0" cy="-28" r="2.2"/>
+                        <circle cx="-15" cy="-24" r="2"/>
+                        <circle cx="15" cy="-24" r="2"/>
+                        <circle cx="0" cy="18" r="4"/>
+                    </g>
+                </svg>`
+            },
+            {
+                key: 'wildflower',
+                name: 'Cosmos Wildflower',
+                svgText: `<svg viewBox="-50 -50 100 100">
+                    <g stroke="#000000" fill="none">
+                        <path d="M 0 -10 C 8 -28 12 -44 0 -46 C -12 -44 -8 -28 0 -10 Z"/>
+                        <path d="M 0 10 C 8 28 12 44 0 46 C -12 44 -8 28 0 10 Z"/>
+                        <path d="M -10 0 C -28 8 -44 12 -46 0 C -44 -12 -28 -8 -10 0 Z"/>
+                        <path d="M 10 0 C 28 8 44 12 46 0 C 44 -12 28 -8 10 0 Z"/>
+                        <path d="M 7 -7 C 24 -14 35 -25 32 -32 C 25 -35 14 -24 7 -7 Z"/>
+                        <path d="M -7 7 C -24 14 -35 25 -32 32 C -25 35 -14 24 -7 7 Z"/>
+                        <path d="M -7 -7 C -14 -24 -25 -35 -32 -32 C -35 -25 -24 -14 -7 -7 Z"/>
+                        <path d="M 7 7 C 14 24 25 35 32 32 C 35 25 24 14 7 7 Z"/>
+                    </g>
+                    <g stroke="#FF0000" fill="none">
+                        <circle cx="0" cy="0" r="9"/>
+                        <circle cx="0" cy="0" r="4.5"/>
+                        <line x1="0" y1="-12" x2="0" y2="-32"/>
+                        <line x1="0" y1="12" x2="0" y2="32"/>
+                        <line x1="-12" y1="0" x2="-32" y2="0"/>
+                        <line x1="12" y1="0" x2="32" y2="0"/>
+                        <line x1="9" y1="-9" x2="22" y2="-22"/>
+                        <line x1="-9" y1="9" x2="-22" y2="22"/>
+                        <line x1="-9" y1="-9" x2="-22" y2="-22"/>
+                        <line x1="9" y1="9" x2="22" y2="22"/>
+                    </g>
+                </svg>`
+            },
+            {
+                key: 'fern',
+                name: 'Botanical Fern Frond',
+                svgText: `<svg viewBox="-50 -50 100 100">
+                    <g stroke="#000000" fill="none">
+                        <path d="M 0 46 C -2 15 -1 -15 0 -46"/>
+                        <path d="M 0 32 C -14 28 -26 20 -28 12 C -18 12 -8 18 0 24"/>
+                        <path d="M 0 30 C 14 26 26 18 28 10 C 18 10 8 16 0 22"/>
+                        <path d="M 0 14 C -16 8 -30 -2 -32 -10 C -20 -10 -10 -2 0 6"/>
+                        <path d="M 0 12 C 16 6 30 -4 32 -12 C 20 -12 10 -4 0 4"/>
+                        <path d="M 0 -6 C -14 -12 -24 -22 -24 -28 C -14 -28 -6 -20 0 -14"/>
+                        <path d="M 0 -8 C 14 -14 24 -24 24 -30 C 14 -30 6 -22 0 -16"/>
+                        <path d="M 0 -24 C -8 -30 -12 -38 -8 -44 C -2 -42 0 -34 0 -28"/>
+                        <path d="M 0 -24 C 8 -30 12 -38 8 -44 C 2 -42 0 -34 0 -28"/>
+                    </g>
+                    <g stroke="#00E000" fill="none">
+                        <path d="M 0 28 L -18 16"/>
+                        <path d="M 0 26 L 18 14"/>
+                        <path d="M 0 10 L -21 -4"/>
+                        <path d="M 0 8 L 21 -6"/>
+                        <path d="M 0 -10 L -15 -22"/>
+                        <path d="M 0 -12 L 15 -24"/>
+                    </g>
+                </svg>`
+            },
+            {
+                key: 'sunburst',
+                name: 'Art Deco Starflower',
+                svgText: `<svg viewBox="-50 -50 100 100">
+                    <g stroke="#000000" fill="none">
+                        <polygon points="0,-46 10,-12 46,0 10,12 0,46 -10,12 -46,0 -10,-12"/>
+                        <polygon points="0,-28 28,0 0,28 -28,0"/>
+                        <circle cx="0" cy="0" r="10"/>
+                    </g>
+                    <g stroke="#FF8000" fill="none">
+                        <line x1="16" y1="-16" x2="36" y2="-36"/>
+                        <line x1="-16" y1="16" x2="-36" y2="36"/>
+                        <line x1="-16" y1="-16" x2="-36" y2="-36"/>
+                        <line x1="16" y1="16" x2="36" y2="36"/>
+                        <circle cx="0" cy="-36" r="3"/>
+                        <circle cx="0" cy="36" r="3"/>
+                        <circle cx="-36" cy="0" r="3"/>
+                        <circle cx="36" cy="0" r="3"/>
+                    </g>
+                </svg>`
+            },
+            {
+                key: 'rosette',
+                name: 'Sacred Geometry Hexagram',
+                svgText: `<svg viewBox="-50 -50 100 100">
+                    <g stroke="#0000FF" fill="none">
+                        <polygon points="0,-44 38,22 -38,22"/>
+                        <polygon points="0,44 38,-22 -38,-22"/>
+                        <circle cx="0" cy="0" r="44"/>
+                    </g>
+                    <g stroke="#00E0E0" fill="none">
+                        <circle cx="0" cy="0" r="22"/>
+                        <path d="M 0 -22 A 22 22 0 0 1 19 11"/>
+                        <path d="M 19 11 A 22 22 0 0 1 -19 11"/>
+                        <path d="M -19 11 A 22 22 0 0 1 0 -22"/>
+                        <circle cx="0" cy="0" r="6"/>
+                    </g>
+                </svg>`
+            }
+        ];
+
+        // Parsed geometry cache for built-ins
+        const parsedBuiltInCache = new Map();
+
+        // Global Studio State
+        const state = {
+            tracks: [], // Array of independent Shape Layer Track objects
+            selectedTrackId: null,
+            globalLinkEdit: false,
+
+            // Cross-Layer Collision Avoidance
+            crossLayerAvoid: true,
+            globalPadding: 4,
+
+            // Workpiece & Physical Bed
+            unit: 'mm',
+            canvasWidth: 300,
+            canvasHeight: 300,
+            canvasMargin: 15,
+            boundaryShape: 'circle',
+            clipBoundary: false,
+            exportFrame: false,
+
+            // Global Viewport & Optics
+            strokeWidth: 0.4,
+            surfaceTheme: 'dark',
+            globalLens: 0,
+            showZoneGuides: true,
+
+            // Pan & Zoom
+            zoom: 1.0,
+            panX: 0,
+            panY: 0,
+
+            // Computed Scene Cache
+            compiledTracks: [], // Per-track compiled polylines & stats
+            totalInstances: 0,
+            totalPaths: 0,
+            totalVertices: 0,
+            totalLengthMeters: 0
+        };
+
+        let trackIdCounter = 1;
+
+        // Factory for creating an independent Shape Layer Track
+        function createShapeTrack(parsedGeometry, overrides = {}) {
+            const safeGeom = parsedGeometry && Array.isArray(parsedGeometry.shapes)
+                ? parsedGeometry
+                : { name: 'Fallback Motif', layerCount: 1, shapes: [{ subLayer: 0, closed: true, points: [{ x: 0, y: -0.45 }, { x: 0.4, y: 0 }, { x: 0, y: 0.45 }, { x: -0.4, y: 0 }] }] };
+            const id = 'track_' + (trackIdCounter++);
+            const maxR = Math.round(Math.min(state.canvasWidth, state.canvasHeight) / 2 - state.canvasMargin);
+            return {
+                id,
+                name: overrides.name || safeGeom.name,
+                shapes: safeGeom.shapes, // Normalized [-0.5, 0.5] polylines with sub-layer index
+                subLayerCount: safeGeom.layerCount || 1,
+
+                // Track Controls
+                visible: overrides.visible !== undefined ? overrides.visible : true,
+                solo: false,
+                locked: false,
+
+                // LightBurn Color Mapping
+                colorMode: overrides.colorMode || 'single', // 'single' | 'preserve_offset' | 'radial_split'
+                baseColorIdx: overrides.baseColorIdx !== undefined ? overrides.baseColorIdx : 0,
+
+                // Individual Array Mode & Parameters
+                mode: overrides.mode || 'meadow', // 'meadow' | 'kaleidoscope' | 'radial' | 'phyllotaxis' | 'grid'
+                seed: overrides.seed || Math.floor(1000 + Math.random() * 90000),
+                density: overrides.density !== undefined ? overrides.density : 45,
+                baseSize: overrides.baseSize !== undefined ? overrides.baseSize : 26,
+                minSpacing: overrides.minSpacing !== undefined ? overrides.minSpacing : 14,
+                innerRadius: overrides.innerRadius !== undefined ? overrides.innerRadius : 0,
+                outerRadius: overrides.outerRadius !== undefined ? overrides.outerRadius : maxR,
+                avoidSelf: overrides.avoidSelf !== undefined ? overrides.avoidSelf : true,
+
+                // Mode-Specific Parameters
+                meadowClump: overrides.meadowClump !== undefined ? overrides.meadowClump : 20,
+                kaleidoWedges: overrides.kaleidoWedges !== undefined ? overrides.kaleidoWedges : 12,
+                kaleidoRings: overrides.kaleidoRings !== undefined ? overrides.kaleidoRings : 2,
+                kaleidoTwist: overrides.kaleidoTwist !== undefined ? overrides.kaleidoTwist : 12,
+                kaleidoMirror: overrides.kaleidoMirror !== undefined ? overrides.kaleidoMirror : true,
+                radialRings: overrides.radialRings !== undefined ? overrides.radialRings : 3,
+                radialAlternate: overrides.radialAlternate !== undefined ? overrides.radialAlternate : true,
+                radialCenterStar: overrides.radialCenterStar !== undefined ? overrides.radialCenterStar : false,
+                spiralAngle: overrides.spiralAngle !== undefined ? overrides.spiralAngle : 137.5,
+                gridHexShift: overrides.gridHexShift !== undefined ? overrides.gridHexShift : 50,
+
+                // Human Randomness & Orientation
+                posJitter: overrides.posJitter !== undefined ? overrides.posJitter : 2.0,
+                scaleJitter: overrides.scaleJitter !== undefined ? overrides.scaleJitter : 25,
+                radialScale: overrides.radialScale !== undefined ? overrides.radialScale : -15,
+                orientationMode: overrides.orientationMode || 'outward', // 'outward' | 'inward' | 'tangent' | 'random' | 'fixed' | 'kaleido'
+                fixedAngle: overrides.fixedAngle !== undefined ? overrides.fixedAngle : 0,
+                rotJitter: overrides.rotJitter !== undefined ? overrides.rotJitter : 15,
+                mirrorMode: overrides.mirrorMode || 'random_x', // 'random_x' | 'random_xy' | 'alternate' | 'none'
+                mirrorProb: overrides.mirrorProb !== undefined ? overrides.mirrorProb : 50,
+
+                // Non-Linear Warping
+                warpBend: overrides.warpBend !== undefined ? overrides.warpBend : 15,
+                warpWave: overrides.warpWave !== undefined ? overrides.warpWave : 10,
+                warpFreq: overrides.warpFreq !== undefined ? overrides.warpFreq : 3.0,
+                warpBulge: overrides.warpBulge !== undefined ? overrides.warpBulge : 0,
+                warpSquash: overrides.warpSquash !== undefined ? overrides.warpSquash : 12
+            };
+        }
+
+        function getActiveTrack() {
+            return state.tracks.find(t => t.id === state.selectedTrackId) || state.tracks[0] || null;
+        }
+
+        // Helper to apply a property update to either the active track or all unlocked tracks if Global Link is active
+        function updateTrackParam(key, value) {
+            const active = getActiveTrack();
+            if (!active) return;
+            if (state.globalLinkEdit) {
+                state.tracks.forEach(t => {
+                    if (!t.locked) t[key] = value;
+                });
+            } else {
+                if (!active.locked) active[key] = value;
+            }
+        }
+
+        /**************************************************************************
+         * DETERMINISTIC PRNG & 2D NOISE FIELD
+         **************************************************************************/
+        function createPRNG(seed) {
+            let a = (seed >>> 0) || 1;
+            return function() {
+                let t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function smoothNoise2D(x, y, seed) {
+            const xi = Math.floor(x);
+            const yi = Math.floor(y);
+            const xf = x - xi;
+            const yf = y - yi;
+            const hash = (ix, iy) => {
+                let h = (ix * 374761393 + iy * 668265263 + seed * 1442695041) | 0;
+                h = (h ^ (h >> 13)) * 1274126177;
+                return ((h ^ (h >> 16)) >>> 0) / 4294967296;
+            };
+            const u = xf * xf * (3 - 2 * xf);
+            const v = yf * yf * (3 - 2 * yf);
+            const n00 = hash(xi, yi);
+            const n10 = hash(xi + 1, yi);
+            const n01 = hash(xi, yi + 1);
+            const n11 = hash(xi + 1, yi + 1);
+            return (n00 * (1 - u) + n10 * u) * (1 - v) + (n01 * (1 - u) + n11 * u) * v;
+        }
+
+        /**************************************************************************
+         * SVG GEOMETRY PARSER & NORMALIZER
+         **************************************************************************/
+        function mapColorToLightBurnIndex(colorStr) {
+            if (!colorStr || colorStr === 'none') return 0;
+            const c = colorStr.trim().toLowerCase();
+            if (c.includes('0000ff') || c === 'blue' || c.includes('38bdf8')) return 1;
+            if (c.includes('ff0000') || c === 'red') return 2;
+            if (c.includes('00e000') || c.includes('00ff00') || c === 'green') return 3;
+            if (c.includes('ff8000') || c === 'orange' || c.includes('d0d000')) return 4;
+            if (c.includes('800080') || c === 'purple') return 5;
+            if (c.includes('00e0e0') || c.includes('00ffff') || c === 'cyan') return 6;
+            if (c.includes('ff00ff') || c === 'magenta') return 7;
+            return 0;
+        }
+
+        function parseSVGGeometry(svgString, name) {
+            if (!svgString || typeof svgString !== 'string') {
+                throw new Error('Empty SVG content');
+            }
+
+            // Ensure the root <svg> has the proper W3C SVG namespace so getTotalLength() and getPointAtLength() are bound
+            let normalizedSvgText = svgString.trim();
+            if (!/xmlns\s*=/i.test(normalizedSvgText)) {
+                normalizedSvgText = normalizedSvgText.replace(/<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+            }
+
+            const sandbox = document.getElementById('svgGeometrySandbox');
+            sandbox.innerHTML = normalizedSvgText;
+            const importedSvg = sandbox.querySelector('svg');
+            if (!importedSvg) {
+                sandbox.innerHTML = '';
+                throw new Error('Invalid SVG file');
+            }
+
+            // Ensure nonzero dimensions on the temporary SVG root for accurate CTM & path length calculation
+            if (!importedSvg.getAttribute('width')) importedSvg.setAttribute('width', '200');
+            if (!importedSvg.getAttribute('height')) importedSvg.setAttribute('height', '200');
+
+            const geomElements = importedSvg.querySelectorAll('path, circle, ellipse, rect, polygon, polyline, line');
+            const rawShapes = [];
+            const layerSet = new Set();
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            geomElements.forEach((el) => {
+                if (el.closest('defs') || el.closest('clipPath') || el.closest('mask')) return;
+                let totalLen = 0;
+                try {
+                    if (typeof el.getTotalLength === 'function') {
+                        totalLen = el.getTotalLength();
+                    }
+                } catch (e) {
+                    return;
+                }
+                if (!totalLen || totalLen <= 0.001) return;
+
+                let strokeColor = el.getAttribute('stroke') || el.getAttribute('fill');
+                let parent = el.parentElement;
+                while (!strokeColor && parent && parent.tagName.toLowerCase() !== 'svg') {
+                    strokeColor = parent.getAttribute('stroke') || parent.getAttribute('fill');
+                    parent = parent.parentElement;
+                }
+                const lbLayer = mapColorToLightBurnIndex(strokeColor);
+                layerSet.add(lbLayer);
+
+                const tag = el.tagName.toLowerCase();
+                let isClosed = (tag === 'circle' || tag === 'ellipse' || tag === 'rect' || tag === 'polygon');
+                if (tag === 'path') {
+                    const dAttr = (el.getAttribute('d') || '').trim();
+                    if (/z\s*$/i.test(dAttr)) isClosed = true;
+                }
+
+                let ctm = null;
+                try {
+                    if (typeof el.getCTM === 'function') ctm = el.getCTM();
+                } catch (e) {}
+
+                const numSamples = Math.max(16, Math.min(96, Math.ceil(totalLen / 1.75)));
+                let prevPt = null;
+                let currentSubpath = [];
+                const subpaths = [];
+
+                for (let i = 0; i <= numSamples; i++) {
+                    const dist = (i / numSamples) * totalLen;
+                    const pt = el.getPointAtLength(dist);
+                    let x = pt.x, y = pt.y;
+                    if (ctm) {
+                        const tx = ctm.a * x + ctm.c * y + ctm.e;
+                        const ty = ctm.b * x + ctm.d * y + ctm.f;
+                        x = tx; y = ty;
+                    }
+
+                    if (prevPt) {
+                        const jumpDist = Math.hypot(x - prevPt.x, y - prevPt.y);
+                        const expectedStep = (totalLen / numSamples) * 4.5;
+                        if (jumpDist > Math.max(expectedStep, 12) && currentSubpath.length > 1) {
+                            subpaths.push({ points: currentSubpath, closed: false });
+                            currentSubpath = [];
+                        }
+                    }
+
+                    currentSubpath.push({ x, y });
+                    prevPt = { x, y };
+
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
+                }
+
+                if (currentSubpath.length > 1) {
+                    subpaths.push({ points: currentSubpath, closed: subpaths.length === 0 ? isClosed : false });
+                }
+
+                subpaths.forEach(sp => {
+                    rawShapes.push({
+                        subLayer: lbLayer,
+                        closed: sp.closed,
+                        points: sp.points
+                    });
+                });
+            });
+
+            sandbox.innerHTML = '';
+
+            if (rawShapes.length === 0 || !isFinite(minX)) {
+                throw new Error('No drawable vector paths found in SVG');
+            }
+
+            const cx = (minX + maxX) / 2;
+            const cy = (minY + maxY) / 2;
+            const span = Math.max(maxX - minX, maxY - minY, 1e-4);
+
+            const normalizedShapes = rawShapes.map(shape => ({
+                subLayer: shape.subLayer,
+                closed: shape.closed,
+                points: shape.points.map(p => ({
+                    x: (p.x - cx) / span,
+                    y: (p.y - cy) / span
+                }))
+            }));
+
+            return {
+                name: name.replace(/\.svg$/i, ''),
+                layerCount: Math.max(1, layerSet.size),
+                shapes: normalizedShapes
+            };
+        }
+
+        function getBuiltInGeometry(key) {
+            if (parsedBuiltInCache.has(key)) return parsedBuiltInCache.get(key);
+            const found = BUILTIN_MOTIFS.find(m => m.key === key) || BUILTIN_MOTIFS[0];
+            const parsed = parseSVGGeometry(found.svgText, found.name);
+            parsedBuiltInCache.set(key, parsed);
+            return parsed;
+        }
+
+        /**************************************************************************
+         * PER-TRACK PLACEMENT & CROSS-LAYER COLLISION ENGINE
+         **************************************************************************/
+        function generatePlacementsForTrack(track, globalPlacedCircles) {
+            const rng = createPRNG(track.seed);
+            const usableW = Math.max(10, state.canvasWidth - state.canvasMargin * 2);
+            const usableH = Math.max(10, state.canvasHeight - state.canvasMargin * 2);
+            const bedMaxRadius = Math.min(usableW, usableH) / 2;
+
+            // Constrain inner/outer radius bounds
+            const rInner = Math.max(0, Math.min(track.innerRadius, bedMaxRadius - 2));
+            const rOuter = Math.max(rInner + 2, Math.min(track.outerRadius, bedMaxRadius * 1.35));
+
+            const rawPlacements = [];
+            const mode = track.mode;
+
+            if (mode === 'meadow') {
+                const count = track.density;
+                const minSep = track.minSpacing;
+                const clumpStrength = track.meadowClump / 100;
+
+                for (let i = 0; i < count; i++) {
+                    let bestX = 0, bestY = 0, bestDist = -1;
+                    const candidates = 14;
+
+                    for (let c = 0; c < candidates; c++) {
+                        let px, py;
+                        if (state.boundaryShape === 'circle' || rInner > 0) {
+                            // Uniform area sampling inside annulus [rInner, rOuter]
+                            const u = rng();
+                            const r = Math.sqrt(rInner * rInner + u * (rOuter * rOuter - rInner * rInner));
+                            const theta = rng() * Math.PI * 2;
+                            px = r * Math.cos(theta);
+                            py = r * Math.sin(theta);
+                        } else {
+                            px = (rng() - 0.5) * usableW;
+                            py = (rng() - 0.5) * usableH;
+                            const d = Math.hypot(px, py);
+                            if (d < rInner || d > rOuter) continue;
+                        }
+
+                        if (clumpStrength > 0.01) {
+                            const nVal = smoothNoise2D(px * 0.02, py * 0.02, track.seed);
+                            if (nVal < clumpStrength * 0.55 && c < candidates - 1) continue;
+                        }
+
+                        // Measure distance to existing candidates on this track + higher priority tracks
+                        let nearest = Infinity;
+                        for (let j = 0; j < rawPlacements.length; j++) {
+                            const d = Math.hypot(px - rawPlacements[j].x, py - rawPlacements[j].y);
+                            if (d < nearest) nearest = d;
+                        }
+                        if (state.crossLayerAvoid && globalPlacedCircles.length > 0) {
+                            for (let g = 0; g < globalPlacedCircles.length; g++) {
+                                const gc = globalPlacedCircles[g];
+                                const d = Math.hypot(px - gc.x, py - gc.y) - gc.r;
+                                if (d < nearest) nearest = d;
+                            }
+                        }
+
+                        if (nearest > bestDist) {
+                            bestDist = nearest;
+                            bestX = px;
+                            bestY = py;
+                        }
+                        if (nearest >= minSep) break;
+                    }
+
+                    const distFromCenter = Math.hypot(bestX, bestY);
+                    const normR = (distFromCenter - rInner) / Math.max(1, rOuter - rInner);
+                    rawPlacements.push({
+                        x: bestX,
+                        y: bestY,
+                        normRadius: Math.max(0, Math.min(1, normR)),
+                        ringIdx: Math.floor(normR * 4),
+                        mirrorOverride: null
+                    });
+                }
+            } else if (mode === 'kaleidoscope') {
+                const wedges = Math.max(2, track.kaleidoWedges);
+                const rings = Math.max(1, track.kaleidoRings);
+                const itemsPerWedge = Math.max(1, Math.round(track.density / (wedges * rings)));
+                const twistRad = (track.kaleidoTwist * Math.PI) / 180;
+                const spanR = Math.max(4, rOuter - rInner);
+
+                for (let rIdx = 0; rIdx < rings; rIdx++) {
+                    const ringNorm = (rIdx + 0.5) / rings;
+                    const baseR = rInner + ringNorm * spanR;
+
+                    for (let item = 0; item < itemsPerWedge; item++) {
+                        const localR = Math.max(rInner, Math.min(rOuter, baseR + (rng() - 0.5) * (spanR / rings) * 0.6));
+                        const wedgeSpan = (Math.PI * 2) / wedges;
+                        const localAngle = (rng() * 0.8 + 0.1) * (wedgeSpan * 0.5);
+                        const sharedRandScale = rng();
+                        const sharedRandRot = rng();
+
+                        for (let w = 0; w < wedges; w++) {
+                            const isMirroredSector = track.kaleidoMirror && (w % 2 === 1);
+                            const sectorBaseAngle = w * wedgeSpan + ringNorm * twistRad;
+                            const theta = isMirroredSector
+                                ? (sectorBaseAngle + wedgeSpan - localAngle)
+                                : (sectorBaseAngle + localAngle);
+
+                            rawPlacements.push({
+                                x: localR * Math.cos(theta),
+                                y: localR * Math.sin(theta),
+                                normRadius: ringNorm,
+                                ringIdx: rIdx,
+                                mirrorOverride: isMirroredSector,
+                                lockedRandScale: sharedRandScale,
+                                lockedRandRot: isMirroredSector ? -sharedRandRot : sharedRandRot
+                            });
+                        }
+                    }
+                }
+            } else if (mode === 'radial') {
+                const rings = Math.max(1, track.radialRings);
+                const spanR = Math.max(2, rOuter - rInner);
+
+                if (track.radialCenterStar && rInner <= 5) {
+                    rawPlacements.push({
+                        x: 0,
+                        y: 0,
+                        normRadius: 0,
+                        ringIdx: 0,
+                        mirrorOverride: false,
+                        lockedRandScale: 0.5,
+                        lockedRandRot: 0
+                    });
+                }
+
+                const totalToDistribute = Math.max(rings * 4, track.density);
+                let weightSum = 0;
+                const ringRadii = [];
+                for (let r = 0; r < rings; r++) {
+                    const frac = (rings === 1) ? 0.5 : (r / (rings - 1));
+                    const rad = rInner + (rings === 1 ? spanR * 0.5 : frac * spanR);
+                    ringRadii.push({ rad, frac });
+                    weightSum += Math.max(10, rad);
+                }
+
+                for (let r = 0; r < rings; r++) {
+                    const { rad, frac } = ringRadii[r];
+                    const countInRing = Math.max(3, Math.round((Math.max(10, rad) / weightSum) * totalToDistribute));
+                    const phaseShift = (track.radialAlternate && r % 2 === 1) ? (Math.PI / countInRing) : 0;
+
+                    for (let i = 0; i < countInRing; i++) {
+                        const theta = (i / countInRing) * Math.PI * 2 + phaseShift;
+                        rawPlacements.push({
+                            x: rad * Math.cos(theta),
+                            y: rad * Math.sin(theta),
+                            normRadius: frac,
+                            ringIdx: r,
+                            mirrorOverride: null
+                        });
+                    }
+                }
+            } else if (mode === 'phyllotaxis') {
+                const count = track.density;
+                const goldenAngle = (track.spiralAngle * Math.PI) / 180;
+
+                for (let i = 0; i < count; i++) {
+                    const normIdx = (i + 0.5) / count;
+                    const r = Math.sqrt(rInner * rInner + normIdx * (rOuter * rOuter - rInner * rInner));
+                    const theta = i * goldenAngle;
+                    const px = r * Math.cos(theta);
+                    const py = r * Math.sin(theta);
+
+                    if (state.boundaryShape === 'rect' && (Math.abs(px) > usableW / 2 || Math.abs(py) > usableH / 2)) continue;
+
+                    rawPlacements.push({
+                        x: px,
+                        y: py,
+                        normRadius: normIdx,
+                        ringIdx: Math.floor(normIdx * 5),
+                        mirrorOverride: null
+                    });
+                }
+            } else if (mode === 'grid') {
+                const count = track.density;
+                const aspect = usableW / usableH;
+                const cols = Math.max(2, Math.round(Math.sqrt(count * aspect)));
+                const rows = Math.max(2, Math.round(count / cols));
+                const stepX = usableW / cols;
+                const stepY = usableH / rows;
+                const hexShift = (track.gridHexShift / 100) * stepX;
+
+                for (let row = 0; row < rows; row++) {
+                    const y = -usableH / 2 + (row + 0.5) * stepY;
+                    const rowOffset = (row % 2 === 1) ? hexShift : 0;
+                    for (let col = 0; col < cols; col++) {
+                        let x = -usableW / 2 + (col + 0.5) * stepX + rowOffset;
+                        if (x > usableW / 2) x -= usableW;
+
+                        const dist = Math.hypot(x, y);
+                        if (dist < rInner || dist > rOuter) continue;
+                        if (state.boundaryShape === 'circle' && dist > bedMaxRadius) continue;
+
+                        rawPlacements.push({
+                            x,
+                            y,
+                            normRadius: Math.min(1, (dist - rInner) / Math.max(1, rOuter - rInner)),
+                            ringIdx: row,
+                            mirrorOverride: null
+                        });
+                    }
+                }
+            }
+
+            // Apply Per-Track Human Randomness, Orientation, Mirroring & Collision Filtering
+            const finalInstances = [];
+            const trackPlacedCircles = [];
+            const padScale = 1 + (state.globalPadding / 100);
+
+            for (let i = 0; i < rawPlacements.length; i++) {
+                const p = rawPlacements[i];
+
+                // Position Jitter
+                const jAngle = rng() * Math.PI * 2;
+                const jMag = rng() * track.posJitter;
+                const fx = p.x + Math.cos(jAngle) * jMag;
+                const fy = p.y + Math.sin(jAngle) * jMag;
+
+                // Instance Scale
+                const randScaleFactor = p.lockedRandScale !== undefined ? p.lockedRandScale : rng();
+                const scaleJitterFrac = (randScaleFactor * 2 - 1) * (track.scaleJitter / 100);
+                const radialFalloffFrac = p.normRadius * (track.radialScale / 100);
+                const instanceSize = Math.max(2.0, track.baseSize * (1 + scaleJitterFrac + radialFalloffFrac));
+
+                const squashFrac = (rng() * 2 - 1) * (track.warpSquash / 100);
+                const scaleX = instanceSize * (1 + squashFrac);
+                const scaleY = instanceSize * (1 - squashFrac);
+
+                const boundingRadius = Math.max(instanceSize * 0.42, track.minSpacing * 0.45) * padScale;
+
+                // 1. Check Cross-Layer Collision against higher-priority tracks
+                if (state.crossLayerAvoid && globalPlacedCircles.length > 0) {
+                    let hitsHigherTrack = false;
+                    for (let g = 0; g < globalPlacedCircles.length; g++) {
+                        const gc = globalPlacedCircles[g];
+                        if (Math.hypot(fx - gc.x, fy - gc.y) < (boundingRadius + gc.r)) {
+                            hitsHigherTrack = true;
+                            break;
+                        }
+                    }
+                    if (hitsHigherTrack) continue;
+                }
+
+                // 2. Check Self-Overlap within this track
+                if (track.avoidSelf) {
+                    let hitsSelf = false;
+                    for (let k = 0; k < trackPlacedCircles.length; k++) {
+                        const sc = trackPlacedCircles[k];
+                        if (Math.hypot(fx - sc.x, fy - sc.y) < (boundingRadius + sc.r)) {
+                            hitsSelf = true;
+                            break;
+                        }
+                    }
+                    if (hitsSelf) continue;
+                }
+
+                const circleRecord = { x: fx, y: fy, r: boundingRadius };
+                trackPlacedCircles.push(circleRecord);
+
+                // Orientation Calculation
+                const radialAngle = Math.atan2(fy, fx) + Math.PI / 2;
+                const fixedRad = (track.fixedAngle * Math.PI) / 180;
+                let baseRot = 0;
+
+                if (track.orientationMode === 'outward') baseRot = radialAngle + fixedRad;
+                else if (track.orientationMode === 'inward') baseRot = radialAngle + Math.PI + fixedRad;
+                else if (track.orientationMode === 'tangent') baseRot = radialAngle + Math.PI / 2 + fixedRad;
+                else if (track.orientationMode === 'random') baseRot = rng() * Math.PI * 2;
+                else if (track.orientationMode === 'fixed') baseRot = fixedRad;
+                else if (track.orientationMode === 'kaleido') {
+                    baseRot = radialAngle + (p.mirrorOverride ? -fixedRad : fixedRad);
+                }
+
+                const randRotVal = p.lockedRandRot !== undefined ? p.lockedRandRot : (rng() * 2 - 1);
+                const rotJitterRad = randRotVal * ((track.rotJitter * Math.PI) / 180);
+                const finalRotation = baseRot + rotJitterRad;
+
+                // Mirroring X/Y Calculation
+                let flipX = 1;
+                let flipY = 1;
+                const prob = track.mirrorProb / 100;
+
+                if (p.mirrorOverride !== null && p.mirrorOverride !== undefined) {
+                    flipX = p.mirrorOverride ? -1 : 1;
+                } else {
+                    if (track.mirrorMode === 'random_x') {
+                        flipX = rng() < prob ? -1 : 1;
+                    } else if (track.mirrorMode === 'random_xy') {
+                        flipX = rng() < prob ? -1 : 1;
+                        flipY = rng() < prob ? -1 : 1;
+                    } else if (track.mirrorMode === 'alternate') {
+                        flipX = (i % 2 === 1) ? -1 : 1;
+                    }
+                }
+
+                const instancePhase = rng() * Math.PI * 2;
+                const instanceBendSign = (track.mode === 'kaleidoscope') ? flipX : (0.4 + rng() * 0.8);
+
+                finalInstances.push({
+                    x: fx,
+                    y: fy,
+                    scaleX,
+                    scaleY,
+                    rotation: finalRotation,
+                    flipX,
+                    flipY,
+                    ringIdx: p.ringIdx,
+                    normRadius: p.normRadius,
+                    phase: instancePhase,
+                    bendSign: instanceBendSign
+                });
+            }
+
+            // Register this track's placed circles into the global priority spatial buffer
+            for (let c = 0; c < trackPlacedCircles.length; c++) {
+                globalPlacedCircles.push(trackPlacedCircles[c]);
+            }
+
+            return finalInstances;
+        }
+
+        /**************************************************************************
+         * MULTI-TRACK SCENE COMPILER & NON-LINEAR VERTEX BAKER
+         **************************************************************************/
+        function buildSceneGeometry() {
+            const halfW = state.canvasWidth / 2;
+            const halfH = state.canvasHeight / 2;
+            const clipW = halfW - state.canvasMargin;
+            const clipH = halfH - state.canvasMargin;
+            const maxR = Math.min(clipW, clipH);
+            const globalLensStrength = state.globalLens / 100;
+
+            const anySolo = state.tracks.some(t => t.solo);
+            const clearSoloBtn = document.getElementById('btnClearSolo');
+            if (anySolo) clearSoloBtn.classList.remove('hidden');
+            else clearSoloBtn.classList.add('hidden');
+
+            const globalPlacedCircles = [];
+            const compiledTracks = [];
+
+            let grandInstances = 0;
+            let grandPaths = 0;
+            let grandVertices = 0;
+            let grandLengthMM = 0;
+
+            for (let tIdx = 0; tIdx < state.tracks.length; tIdx++) {
+                const track = state.tracks[tIdx];
+                const isTrackRendered = anySolo ? track.solo : track.visible;
+
+                if (!isTrackRendered) {
+                    compiledTracks.push({
+                        trackId: track.id,
+                        trackName: track.name,
+                        baseColorIdx: track.baseColorIdx,
+                        instanceCount: 0,
+                        pathCount: 0,
+                        vertexCount: 0,
+                        polylines: []
+                    });
+                    continue;
+                }
+
+                const placements = generatePlacementsForTrack(track, globalPlacedCircles);
+                const bendStrength = (track.warpBend / 100) * 0.85;
+                const waveAmp = (track.warpWave / 100) * 0.065;
+                const waveFreq = track.warpFreq * Math.PI * 2;
+                const bulgeStrength = track.warpBulge / 100;
+
+                const trackPolylines = [];
+                let trackPaths = 0;
+                let trackVertices = 0;
+
+                for (let i = 0; i < placements.length; i++) {
+                    const inst = placements[i];
+                    const cosR = Math.cos(inst.rotation);
+                    const sinR = Math.sin(inst.rotation);
+
+                    for (let s = 0; s < track.shapes.length; s++) {
+                        const shape = track.shapes[s];
+
+                        // Resolve LightBurn Layer Color (0..7)
+                        let lbColorIdx = track.baseColorIdx;
+                        if (track.colorMode === 'preserve_offset') {
+                            lbColorIdx = (track.baseColorIdx + shape.subLayer) % 8;
+                        } else if (track.colorMode === 'radial_split') {
+                            lbColorIdx = (track.baseColorIdx + inst.ringIdx) % 8;
+                        }
+
+                        const srcPts = shape.points;
+                        const bakedPts = [];
+
+                        for (let p = 0; p < srcPts.length; p++) {
+                            let lx = srcPts[p].x * inst.flipX;
+                            let ly = srcPts[p].y * inst.flipY;
+
+                            // 1. Local Petal Bulge / Pinch
+                            if (Math.abs(bulgeStrength) > 0.005) {
+                                const rLocal = Math.hypot(lx, ly) * 2;
+                                if (rLocal > 1e-4) {
+                                    const factor = Math.pow(rLocal, -bulgeStrength * 0.55);
+                                    lx *= factor;
+                                    ly *= factor;
+                                }
+                            }
+
+                            // 2. Non-Linear Wind Sway / Stem Bend
+                            if (Math.abs(bendStrength) > 0.005) {
+                                const normY = ly + 0.5;
+                                lx += bendStrength * inst.bendSign * (normY * normY) * 0.55;
+                            }
+
+                            // 3. Hand-Drawn Organic Wave Wobble
+                            if (waveAmp > 0.0005) {
+                                const ox = lx, oy = ly;
+                                lx += Math.sin(oy * waveFreq + inst.phase) * waveAmp;
+                                ly += Math.cos(ox * waveFreq + inst.phase * 1.3) * waveAmp;
+                            }
+
+                            // 4. Scale, Rotate & Translate to Physical Bed (mm)
+                            const sx = lx * inst.scaleX;
+                            const sy = ly * inst.scaleY;
+                            let wx = inst.x + (sx * cosR - sy * sinR);
+                            let wy = inst.y + (sx * sinR + sy * cosR);
+
+                            // 5. Global Fisheye Lens
+                            if (Math.abs(globalLensStrength) > 0.005) {
+                                const gr = Math.hypot(wx, wy) / Math.max(1, maxR);
+                                if (gr > 1e-4) {
+                                    const gFactor = Math.pow(gr, -globalLensStrength * 0.5);
+                                    wx *= gFactor;
+                                    wy *= gFactor;
+                                }
+                            }
+
+                            bakedPts.push({ x: wx, y: wy });
+                        }
+
+                        // Optional Hard Boundary Clipping
+                        if (state.clipBoundary) {
+                            const insidePts = bakedPts.filter(pt => {
+                                if (state.boundaryShape === 'circle') return Math.hypot(pt.x, pt.y) <= maxR;
+                                return Math.abs(pt.x) <= clipW && Math.abs(pt.y) <= clipH;
+                            });
+                            if (insidePts.length < 2) continue;
+                            trackPolylines.push({
+                                colorIdx: lbColorIdx,
+                                closed: insidePts.length === bakedPts.length ? shape.closed : false,
+                                points: insidePts
+                            });
+                            trackPaths++;
+                            trackVertices += insidePts.length;
+                        } else {
+                            trackPolylines.push({
+                                colorIdx: lbColorIdx,
+                                closed: shape.closed,
+                                points: bakedPts
+                            });
+                            trackPaths++;
+                            trackVertices += bakedPts.length;
+                        }
+
+                        for (let v = 1; v < bakedPts.length; v++) {
+                            grandLengthMM += Math.hypot(bakedPts[v].x - bakedPts[v - 1].x, bakedPts[v].y - bakedPts[v - 1].y);
+                        }
+                    }
+                }
+
+                compiledTracks.push({
+                    trackId: track.id,
+                    trackName: track.name,
+                    baseColorIdx: track.baseColorIdx,
+                    instanceCount: placements.length,
+                    pathCount: trackPaths,
+                    vertexCount: trackVertices,
+                    polylines: trackPolylines
+                });
+
+                grandInstances += placements.length;
+                grandPaths += trackPaths;
+                grandVertices += trackVertices;
+            }
+
+            state.compiledTracks = compiledTracks;
+            state.totalInstances = grandInstances;
+            state.totalPaths = grandPaths;
+            state.totalVertices = grandVertices;
+            state.totalLengthMeters = grandLengthMM / 1000;
+
+            // Update Telemetry Footer
+            document.getElementById('statInstances').textContent = grandInstances.toLocaleString();
+            document.getElementById('statPaths').textContent = grandPaths.toLocaleString();
+            document.getElementById('statVertices').textContent = grandVertices.toLocaleString();
+            document.getElementById('statCutLength').textContent = state.totalLengthMeters.toFixed(2) + ' m';
+
+            renderLayerSummaryPills();
+        }
+
+        /**************************************************************************
+         * HTML5 CANVAS REAL-TIME VIEWPORT WITH PHYSICAL MILLIMETER RULERS
+         **************************************************************************/
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeViewportCanvas() {
+            const wrapper = document.getElementById('canvasWrapper');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = wrapper.clientWidth * dpr;
+            canvas.height = wrapper.clientHeight * dpr;
+            renderViewport();
+        }
+
+        function fitBedToScreen() {
+            const wrapper = document.getElementById('canvasWrapper');
+            const pad = 80;
+            const availW = Math.max(120, wrapper.clientWidth - pad * 2);
+            const availH = Math.max(120, wrapper.clientHeight - pad * 2);
+            state.zoom = Math.min(availW / state.canvasWidth, availH / state.canvasHeight);
+            state.panX = 0;
+            state.panY = 0;
+            document.getElementById('zoomReadout').textContent = Math.round(state.zoom * 100) + '%';
+            renderViewport();
+        }
+
+        function renderViewport() {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.save();
+            ctx.clearRect(0, 0, w, h);
+            ctx.scale(dpr, dpr);
+
+            const viewW = w / dpr;
+            const viewH = h / dpr;
+
+            ctx.translate(viewW / 2 + state.panX, viewH / 2 + state.panY);
+            ctx.scale(state.zoom, state.zoom);
+
+            const bedW = state.canvasWidth;
+            const bedH = state.canvasHeight;
+            const halfW = bedW / 2;
+            const halfH = bedH / 2;
+            const margin = state.canvasMargin;
+
+            // 1. Draw Workpiece Surface
+            ctx.save();
+            if (state.surfaceTheme === 'paper') {
+                ctx.fillStyle = '#f8fafc';
+                ctx.strokeStyle = '#cbd5e1';
+            } else if (state.surfaceTheme === 'birch') {
+                ctx.fillStyle = '#dfc196';
+                ctx.strokeStyle = '#b48a55';
+            } else if (state.surfaceTheme === 'blueprint') {
+                ctx.fillStyle = '#0c2d48';
+                ctx.strokeStyle = '#2e8bc0';
+            } else {
+                ctx.fillStyle = '#141824';
+                ctx.strokeStyle = '#2e3852';
+            }
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+            ctx.shadowBlur = 24 / state.zoom;
+            ctx.fillRect(-halfW, -halfH, bedW, bedH);
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 1.5 / state.zoom;
+            ctx.strokeRect(-halfW, -halfH, bedW, bedH);
+
+            // Physical Millimeter Rulers along Top and Left edges of the bed
+            ctx.fillStyle = state.surfaceTheme === 'paper' ? '#64748b' : '#64748b';
+            ctx.strokeStyle = state.surfaceTheme === 'paper' ? '#94a3b8' : '#475569';
+            ctx.lineWidth = 1 / state.zoom;
+            ctx.font = `${8.5 / state.zoom}px "JetBrains Mono", monospace`;
+
+            for (let mm = 0; mm <= bedW; mm += 10) {
+                const rx = -halfW + mm;
+                const isMajor = (mm % 50 === 0);
+                const tickLen = (isMajor ? 6 : 3) / state.zoom;
+                ctx.beginPath();
+                ctx.moveTo(rx, -halfH);
+                ctx.lineTo(rx, -halfH - tickLen);
+                ctx.stroke();
+                if (isMajor) {
+                    ctx.fillText(`${mm}`, rx - 6 / state.zoom, -halfH - 8 / state.zoom);
+                }
+            }
+            for (let mm = 0; mm <= bedH; mm += 10) {
+                const ry = -halfH + mm;
+                const isMajor = (mm % 50 === 0);
+                const tickLen = (isMajor ? 6 : 3) / state.zoom;
+                ctx.beginPath();
+                ctx.moveTo(-halfW, ry);
+                ctx.lineTo(-halfW - tickLen, ry);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 2. Safe Margin & Active Track Radial Zone Guides
+            ctx.save();
+            const safeW = Math.max(2, bedW - margin * 2);
+            const safeH = Math.max(2, bedH - margin * 2);
+            const maxR = Math.min(safeW, safeH) / 2;
+
+            ctx.strokeStyle = state.surfaceTheme === 'paper' ? 'rgba(100,116,139,0.35)' : 'rgba(6, 182, 212, 0.25)';
+            ctx.setLineDash([4 / state.zoom, 4 / state.zoom]);
+            ctx.lineWidth = 1 / state.zoom;
+
+            if (state.boundaryShape === 'circle') {
+                ctx.beginPath();
+                ctx.arc(0, 0, maxR, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                ctx.strokeRect(-safeW / 2, -safeH / 2, safeW, safeH);
+            }
+
+            // Draw Active Track's Inner & Outer Radius Zone Rings
+            const activeTrack = getActiveTrack();
+            if (state.showZoneGuides && activeTrack) {
+                const tColor = LIGHTBURN_PALETTE[activeTrack.baseColorIdx]?.previewDark || '#06b6d4';
+                ctx.strokeStyle = tColor;
+                ctx.globalAlpha = 0.35;
+                ctx.setLineDash([2 / state.zoom, 3 / state.zoom]);
+                if (activeTrack.innerRadius > 1) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, activeTrack.innerRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                if (activeTrack.outerRadius < maxR - 1) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, activeTrack.outerRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+
+            // 3. Outer Cut Frame if Enabled
+            if (state.exportFrame) {
+                ctx.save();
+                ctx.strokeStyle = state.surfaceTheme === 'dark' ? '#38bdf8' : '#111827';
+                ctx.lineWidth = state.strokeWidth;
+                if (state.boundaryShape === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, maxR, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    ctx.strokeRect(-safeW / 2, -safeH / 2, safeW, safeH);
+                }
+                ctx.restore();
+            }
+
+            // 4. Render Compiled Shape Layer Tracks (Bottom to Top Z-Order)
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = state.strokeWidth;
+
+            // Render in reverse stack order so Track 1 (Top of list) draws on top visually
+            for (let t = state.compiledTracks.length - 1; t >= 0; t--) {
+                const cTrack = state.compiledTracks[t];
+                if (cTrack.polylines.length === 0) continue;
+
+                // Group by LightBurn color within this track for fast batched canvas stroke
+                for (let l = 0; l < LIGHTBURN_PALETTE.length; l++) {
+                    const layerCfg = LIGHTBURN_PALETTE[l];
+                    if (!layerCfg.active) continue;
+
+                    let strokeCol = layerCfg.previewDark;
+                    if (state.surfaceTheme === 'paper') strokeCol = layerCfg.previewPaper;
+                    else if (state.surfaceTheme === 'birch') strokeCol = l === 0 ? '#2b180a' : layerCfg.previewPaper;
+                    else if (state.surfaceTheme === 'blueprint') strokeCol = l === 0 ? '#e0f2fe' : layerCfg.previewDark;
+
+                    ctx.strokeStyle = strokeCol;
+                    ctx.beginPath();
+
+                    let hasSegments = false;
+                    const lines = cTrack.polylines;
+                    for (let i = 0; i < lines.length; i++) {
+                        const sh = lines[i];
+                        if (sh.colorIdx !== l) continue;
+                        const pts = sh.points;
+                        if (pts.length < 2) continue;
+                        hasSegments = true;
+                        ctx.moveTo(pts[0].x, pts[0].y);
+                        for (let p = 1; p < pts.length; p++) {
+                            ctx.lineTo(pts[p].x, pts[p].y);
+                        }
+                        if (sh.closed) ctx.closePath();
+                    }
+                    if (hasSegments) ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function rebuildAndRender() {
+            buildSceneGeometry();
+            renderViewport();
+            renderTrackListUI();
+        }
+
+        /**************************************************************************
+         * MULTI-TRACK & LIGHTBURN SVG EXPORTER
+         * Structures output by Shape Layer (<g inkscape:label="TrackName">)
+         * with explicit LightBurn hex colors and baked path coordinates.
+         **************************************************************************/
+        function generateSVGExport({ onlyTrackId = null, onlyColorIdx = null } = {}) {
+            const w = state.canvasWidth;
+            const h = state.canvasHeight;
+            const cx = w / 2;
+            const cy = h / 2;
+            const unitAttrW = state.unit === 'in' ? `${(w / 25.4).toFixed(4)}in` : `${w}mm`;
+            const unitAttrH = state.unit === 'in' ? `${(h / 25.4).toFixed(4)}in` : `${h}mm`;
+
+            const svgLines = [];
+            svgLines.push(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>`);
+            svgLines.push(`<!-- Generated by FloraArray Studio v3.0 — Multi-Track SVG Layer CAM Output -->`);
+            svgLines.push(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${unitAttrW}" height="${unitAttrH}" viewBox="0 0 ${w} ${h}">`);
+
+            if (state.exportFrame && !onlyTrackId && (onlyColorIdx === null || onlyColorIdx === 0)) {
+                const safeW = Math.max(2, w - state.canvasMargin * 2);
+                const safeH = Math.max(2, h - state.canvasMargin * 2);
+                const maxR = Math.min(safeW, safeH) / 2;
+                svgLines.push(`  <g id="Outer_Cut_Frame" inkscape:label="Outer Cut Frame" inkscape:groupmode="layer" stroke="#000000" stroke-width="${state.strokeWidth}" fill="none">`);
+                if (state.boundaryShape === 'circle') {
+                    svgLines.push(`    <circle cx="${cx.toFixed(3)}" cy="${cy.toFixed(3)}" r="${maxR.toFixed(3)}" />`);
+                } else {
+                    svgLines.push(`    <rect x="${(cx - safeW / 2).toFixed(3)}" y="${(cy - safeH / 2).toFixed(3)}" width="${safeW.toFixed(3)}" height="${safeH.toFixed(3)}" />`);
+                }
+                svgLines.push(`  </g>`);
+            }
+
+            state.compiledTracks.forEach((cTrack, idx) => {
+                if (onlyTrackId && cTrack.trackId !== onlyTrackId) return;
+                if (cTrack.polylines.length === 0) return;
+
+                const safeLabel = cTrack.trackName.replace(/[^a-zA-Z0-9_-]/g, '_');
+                svgLines.push(`  <g id="Layer_${idx + 1}_${safeLabel}" inkscape:label="Layer ${idx + 1}: ${cTrack.trackName}" inkscape:groupmode="layer">`);
+
+                // Sub-group by LightBurn Hex Color inside each Shape Layer Track
+                for (let l = 0; l < LIGHTBURN_PALETTE.length; l++) {
+                    if (onlyColorIdx !== null && onlyColorIdx !== l) continue;
+                    const layerCfg = LIGHTBURN_PALETTE[l];
+                    if (!layerCfg.active && onlyColorIdx === null) continue;
+
+                    const matchingPaths = cTrack.polylines.filter(p => p.colorIdx === l);
+                    if (matchingPaths.length === 0) continue;
+
+                    svgLines.push(`    <g id="${safeLabel}_${layerCfg.id}" stroke="${layerCfg.hex}" stroke-width="${state.strokeWidth}" fill="none" stroke-linecap="round" stroke-linejoin="round">`);
+                    for (let i = 0; i < matchingPaths.length; i++) {
+                        const sh = matchingPaths[i];
+                        const pts = sh.points;
+                        if (pts.length < 2) continue;
+                        const dParts = [];
+                        for (let p = 0; p < pts.length; p++) {
+                            dParts.push(`${p === 0 ? 'M' : 'L'}${(pts[p].x + cx).toFixed(3)} ${(pts[p].y + cy).toFixed(3)}`);
+                        }
+                        if (sh.closed) dParts.push('Z');
+                        svgLines.push(`      <path d="${dParts.join(' ')}" />`);
+                    }
+                    svgLines.push(`    </g>`);
+                }
+
+                svgLines.push(`  </g>`);
+            });
+
+            svgLines.push(`</svg>`);
+            return svgLines.join('\n');
+        }
+
+        function triggerSVGDownload(svgContent, filename) {
+            const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        /**************************************************************************
+         * UI RENDERERS: SHAPE TRACKS STACK, SUMMARY PILLS & INSPECTOR SYNC
+         **************************************************************************/
+        function renderTrackListUI() {
+            const container = document.getElementById('shapeTracksContainer');
+            container.innerHTML = '';
+
+            document.getElementById('trackCountReadout').textContent = `${state.tracks.length} SHAPE TRACKS (TOP = PRIORITY 1)`;
+
+            state.tracks.forEach((track, idx) => {
+                const isSelected = (track.id === state.selectedTrackId);
+                const lbColor = LIGHTBURN_PALETTE[track.baseColorIdx] || LIGHTBURN_PALETTE[0];
+                const compiled = state.compiledTracks.find(c => c.trackId === track.id);
+                const instCount = compiled ? compiled.instanceCount : 0;
+
+                // Mini SVG thumbnail preview
+                const thumbPaths = track.shapes.map(sh => {
+                    const d = sh.points.map((pt, i) => `${i === 0 ? 'M' : 'L'}${(pt.x * 30 + 18).toFixed(1)} ${(pt.y * 30 + 18).toFixed(1)}`).join(' ') + (sh.closed ? 'Z' : '');
+                    return `<path d="${d}" stroke="${lbColor.previewDark}" stroke-width="1.5" fill="none"/>`;
+                }).join('');
+
+                const card = document.createElement('div');
+                card.className = `p-2 rounded-xl border cursor-pointer transition ${
+                    isSelected ? 'track-selected' : 'bg-studio-card border-studio-border hover:border-slate-600'
+                } ${!track.visible ? 'opacity-50' : ''}`;
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <!-- Mini Motif Thumbnail -->
+                        <div class="w-9 h-9 rounded-lg bg-studio-bg border border-studio-border flex items-center justify-center shrink-0 relative">
+                            <svg viewBox="0 0 36 36" class="w-8 h-8">${thumbPaths}</svg>
+                            <span class="absolute -top-1 -left-1 w-4 h-4 rounded-full text-[9px] font-mono font-bold flex items-center justify-center text-slate-950" style="background-color:${lbColor.previewDark}">${idx + 1}</span>
+                        </div>
+
+                        <!-- Track Name & Mode Badges -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-semibold text-slate-100 truncate text-[11px]" title="${track.name}">${track.name}</span>
+                                ${track.locked ? '<span class="text-[9px] text-amber-400 font-mono">[LOCKED]</span>' : ''}
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5 text-[10px] font-mono text-slate-400">
+                                <span class="px-1.5 py-0.2 rounded bg-studio-bg border border-studio-border text-cyan-400 uppercase">${track.mode}</span>
+                                <span>${lbColor.id}</span>
+                                <span>·</span>
+                                <span class="text-slate-300">${instCount} inst</span>
+                                <span>·</span>
+                                <span>${track.innerRadius}–${track.outerRadius}mm</span>
+                            </div>
+                        </div>
+
+                        <!-- Track Action Buttons (Visibility, Solo, Lock, Duplicate, Up/Down, Delete) -->
+                        <div class="flex flex-col gap-1 shrink-0" onclick="event.stopPropagation()">
+                            <div class="flex items-center gap-1 justify-end">
+                                <button data-act="vis" data-id="${track.id}" title="Toggle Visibility" class="p-1 rounded hover:bg-studio-bg ${track.visible ? 'text-cyan-400' : 'text-slate-600'}">
+                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        ${track.visible
+                                            ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+                                            : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'}
+                                    </svg>
+                                </button>
+                                <button data-act="solo" data-id="${track.id}" title="Solo This Track" class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${track.solo ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-studio-bg text-slate-400 border-studio-border hover:text-white'}">S</button>
+                                <button data-act="lock" data-id="${track.id}" title="Lock Track Settings" class="p-1 rounded hover:bg-studio-bg ${track.locked ? 'text-amber-400' : 'text-slate-500'}">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        ${track.locked
+                                            ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+                                            : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'}
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-1 justify-end">
+                                <button data-act="up" data-id="${track.id}" title="Move Track Up (Higher Priority)" class="p-0.5 rounded hover:bg-studio-bg text-slate-400 hover:text-white">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+                                </button>
+                                <button data-act="down" data-id="${track.id}" title="Move Track Down (Lower Priority)" class="p-0.5 rounded hover:bg-studio-bg text-slate-400 hover:text-white">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <button data-act="dup" data-id="${track.id}" title="Duplicate Track (Create Foreground/Background Layer)" class="p-0.5 rounded hover:bg-studio-bg text-slate-400 hover:text-cyan-400">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                                <button data-act="del" data-id="${track.id}" title="Delete Track" class="p-0.5 rounded hover:bg-studio-bg text-slate-500 hover:text-rose-400">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    state.selectedTrackId = track.id;
+                    syncInspectorFromActiveTrack();
+                    renderTrackListUI();
+                    renderViewport();
+                });
+
+                container.appendChild(card);
+            });
+
+            // Bind action buttons
+            container.querySelectorAll('button[data-act]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const act = e.currentTarget.getAttribute('data-act');
+                    const id = e.currentTarget.getAttribute('data-id');
+                    const idx = state.tracks.findIndex(t => t.id === id);
+                    if (idx === -1) return;
+                    const track = state.tracks[idx];
+
+                    if (act === 'vis') {
+                        track.visible = !track.visible;
+                    } else if (act === 'solo') {
+                        track.solo = !track.solo;
+                    } else if (act === 'lock') {
+                        track.locked = !track.locked;
+                    } else if (act === 'up' && idx > 0) {
+                        const tmp = state.tracks[idx - 1];
+                        state.tracks[idx - 1] = track;
+                        state.tracks[idx] = tmp;
+                    } else if (act === 'down' && idx < state.tracks.length - 1) {
+                        const tmp = state.tracks[idx + 1];
+                        state.tracks[idx + 1] = track;
+                        state.tracks[idx] = tmp;
+                    } else if (act === 'dup') {
+                        const clone = JSON.parse(JSON.stringify(track));
+                        clone.id = 'track_' + (trackIdCounter++);
+                        clone.name = track.name + ' (Copy)';
+                        clone.seed = Math.floor(1000 + Math.random() * 90000);
+                        clone.baseColorIdx = (track.baseColorIdx + 1) % 8;
+                        state.tracks.splice(idx + 1, 0, clone);
+                        state.selectedTrackId = clone.id;
+                        syncInspectorFromActiveTrack();
+                    } else if (act === 'del') {
+                        if (state.tracks.length <= 1) {
+                            document.getElementById('statusBanner').textContent = 'At least 1 Shape Layer Track must remain.';
+                            return;
+                        }
+                        state.tracks.splice(idx, 1);
+                        if (state.selectedTrackId === id) {
+                            state.selectedTrackId = state.tracks[0].id;
+                            syncInspectorFromActiveTrack();
+                        }
+                    }
+                    rebuildAndRender();
+                });
+            });
+        }
+
+        function renderLayerSummaryPills() {
+            const bar = document.getElementById('layerSummaryPills');
+            bar.innerHTML = '';
+
+            state.compiledTracks.forEach((cTrack, idx) => {
+                const lb = LIGHTBURN_PALETTE[cTrack.baseColorIdx] || LIGHTBURN_PALETTE[0];
+                const isSelected = (cTrack.trackId === state.selectedTrackId);
+                const pill = document.createElement('button');
+                pill.className = `px-2.5 py-1 rounded-lg border text-[10px] font-mono flex items-center gap-2 shrink-0 transition ${
+                    isSelected ? 'bg-cyan-500/15 border-cyan-400 text-white' : 'bg-studio-card border-studio-border text-slate-300 hover:border-slate-500'
+                }`;
+                pill.innerHTML = `
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color:${lb.previewDark}"></span>
+                    <span class="font-semibold">L${idx + 1}: ${cTrack.trackName}</span>
+                    <span class="text-cyan-400">${cTrack.instanceCount} sh</span>
+                    <span class="text-slate-500">|</span>
+                    <span class="text-amber-400">${cTrack.pathCount} paths</span>
+                `;
+                pill.addEventListener('click', () => {
+                    state.selectedTrackId = cTrack.trackId;
+                    syncInspectorFromActiveTrack();
+                    renderTrackListUI();
+                    renderViewport();
+                });
+                bar.appendChild(pill);
+            });
+        }
+
+        function syncInspectorFromActiveTrack() {
+            const t = getActiveTrack();
+            if (!t) return;
+
+            const lb = LIGHTBURN_PALETTE[t.baseColorIdx] || LIGHTBURN_PALETTE[0];
+            const idx = state.tracks.findIndex(tr => tr.id === t.id);
+
+            document.getElementById('inspectorColorDot').style.backgroundColor = lb.previewDark;
+            document.getElementById('inspectorTrackTitle').textContent = `Layer ${idx + 1}: ${t.name}`;
+            document.getElementById('trackSeedInput').value = t.seed;
+
+            document.getElementById('trackColorModeSelect').value = t.colorMode;
+            document.getElementById('trackBaseColorSelect').value = String(t.baseColorIdx);
+
+            // Mode Tabs
+            document.querySelectorAll('.mode-tab').forEach(btn => {
+                if (btn.getAttribute('data-mode') === t.mode) {
+                    btn.className = 'mode-tab py-1.5 px-1 rounded-lg text-center font-medium text-[11px] bg-cyan-500 text-slate-950 font-semibold transition';
+                } else {
+                    btn.className = 'mode-tab py-1.5 px-1 rounded-lg text-center font-medium text-[11px] text-slate-300 hover:text-white transition';
+                }
+            });
+            document.querySelectorAll('.mode-subpanel').forEach(p => p.classList.add('hidden'));
+            const activeSub = document.getElementById(`subControls_${t.mode}`);
+            if (activeSub) activeSub.classList.remove('hidden');
+
+            // Sliders & Values
+            document.getElementById('sliderDensity').value = t.density;
+            document.getElementById('valDensity').textContent = `${t.density} shapes`;
+
+            document.getElementById('sliderBaseSize').value = t.baseSize;
+            document.getElementById('valBaseSize').textContent = `${t.baseSize} mm`;
+
+            document.getElementById('sliderMinSpacing').value = t.minSpacing;
+            document.getElementById('valMinSpacing').textContent = `${t.minSpacing} mm`;
+
+            document.getElementById('sliderInnerRadius').value = t.innerRadius;
+            document.getElementById('valInnerRadius').textContent = `${t.innerRadius} mm`;
+
+            document.getElementById('sliderOuterRadius').value = t.outerRadius;
+            document.getElementById('valOuterRadius').textContent = `${t.outerRadius} mm`;
+
+            document.getElementById('sliderMeadowClump').value = t.meadowClump;
+            document.getElementById('valMeadowClump').textContent = `${t.meadowClump}%`;
+
+            document.getElementById('sliderKaleidoWedges').value = t.kaleidoWedges;
+            document.getElementById('valKaleidoWedges').textContent = t.kaleidoWedges;
+
+            document.getElementById('sliderKaleidoRings').value = t.kaleidoRings;
+            document.getElementById('valKaleidoRings').textContent = t.kaleidoRings;
+
+            document.getElementById('sliderKaleidoTwist').value = t.kaleidoTwist;
+            document.getElementById('valKaleidoTwist').textContent = `${t.kaleidoTwist}°`;
+
+            document.getElementById('chkKaleidoMirror').checked = t.kaleidoMirror;
+
+            document.getElementById('sliderRadialRings').value = t.radialRings;
+            document.getElementById('valRadialRings').textContent = t.radialRings;
+
+            document.getElementById('chkRadialAlternate').checked = t.radialAlternate;
+            document.getElementById('chkRadialCenterStar').checked = t.radialCenterStar;
+
+            document.getElementById('sliderSpiralAngle').value = t.spiralAngle;
+            document.getElementById('valSpiralAngle').textContent = `${t.spiralAngle.toFixed(1)}°`;
+
+            document.getElementById('sliderGridHexShift').value = t.gridHexShift;
+            document.getElementById('valGridHexShift').textContent = `${t.gridHexShift}%`;
+
+            document.getElementById('chkTrackAvoidSelf').checked = t.avoidSelf;
+
+            // Randomness & Rotation
+            document.getElementById('sliderPosJitter').value = t.posJitter;
+            document.getElementById('valPosJitter').textContent = `${t.posJitter.toFixed(1)} mm`;
+
+            document.getElementById('sliderScaleJitter').value = t.scaleJitter;
+            document.getElementById('valScaleJitter').textContent = `${t.scaleJitter}%`;
+
+            document.getElementById('sliderRadialScale').value = t.radialScale;
+            document.getElementById('valRadialScale').textContent = `${t.radialScale > 0 ? '+' : ''}${t.radialScale}%`;
+
+            document.getElementById('orientationModeSelect').value = t.orientationMode;
+            document.getElementById('mirrorModeSelect').value = t.mirrorMode;
+
+            document.getElementById('sliderFixedAngle').value = t.fixedAngle;
+            document.getElementById('valFixedAngle').textContent = `${t.fixedAngle}°`;
+
+            document.getElementById('sliderRotJitter').value = t.rotJitter;
+            document.getElementById('valRotJitter').textContent = `±${t.rotJitter}°`;
+
+            document.getElementById('sliderMirrorProb').value = t.mirrorProb;
+            document.getElementById('valMirrorProb').textContent = `${t.mirrorProb}%`;
+
+            // Warping
+            document.getElementById('sliderWarpBend').value = t.warpBend;
+            document.getElementById('valWarpBend').textContent = `${t.warpBend}%`;
+
+            document.getElementById('sliderWarpWave').value = t.warpWave;
+            document.getElementById('valWarpWave').textContent = `${t.warpWave}%`;
+
+            document.getElementById('sliderWarpFreq').value = t.warpFreq;
+            document.getElementById('valWarpFreq').textContent = `${t.warpFreq.toFixed(1)}x`;
+
+            document.getElementById('sliderWarpBulge').value = t.warpBulge;
+            document.getElementById('valWarpBulge').textContent = `${t.warpBulge}%`;
+
+            document.getElementById('sliderWarpSquash').value = t.warpSquash;
+            document.getElementById('valWarpSquash').textContent = `${t.warpSquash}%`;
+        }
+
+        function renderLayerPalette() {
+            const container = document.getElementById('layerPaletteList');
+            container.innerHTML = '';
+
+            LIGHTBURN_PALETTE.forEach((layer) => {
+                const btn = document.createElement('button');
+                btn.className = `flex items-center justify-center gap-1 py-1 px-1.5 rounded-lg border text-[10px] font-mono transition ${
+                    layer.active
+                        ? 'bg-studio-card border-studio-border text-slate-200'
+                        : 'bg-studio-bg/40 border-studio-border/40 text-slate-500 opacity-45'
+                }`;
+                btn.innerHTML = `
+                    <span class="w-2.5 h-2.5 rounded-sm shrink-0 border border-white/20" style="background-color:${layer.previewDark}"></span>
+                    <span>${layer.id}</span>
+                `;
+                btn.addEventListener('click', () => {
+                    layer.active = !layer.active;
+                    renderLayerPalette();
+                    renderViewport();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        /**************************************************************************
+         * MULTI-TRACK CURATED SCENE COMPOSITIONS
+         * Demonstrates how different shapes can simultaneously run different array
+         * modes (e.g. Kaleidoscope border + Mandala mid-ring + Meadow scatter filler)
+         **************************************************************************/
+        function loadMultiTrackScene(sceneKey) {
+            state.tracks = [];
+
+            const lotus = getBuiltInGeometry('lotus');
+            const wildflower = getBuiltInGeometry('wildflower');
+            const fern = getBuiltInGeometry('fern');
+            const sunburst = getBuiltInGeometry('sunburst');
+            const rosette = getBuiltInGeometry('rosette');
+
+            if (sceneKey === 'botanical_sanctuary') {
+                // Track 1: Central Sacred Lotus Mandala (0 - 55mm)
+                state.tracks.push(createShapeTrack(lotus, {
+                    name: 'Sacred Lotus (Core Mandala)',
+                    mode: 'radial',
+                    baseColorIdx: 0,
+                    density: 10,
+                    baseSize: 32,
+                    minSpacing: 16,
+                    innerRadius: 0,
+                    outerRadius: 52,
+                    radialRings: 2,
+                    radialCenterStar: true,
+                    orientationMode: 'outward',
+                    rotJitter: 4,
+                    warpBend: 8,
+                    warpWave: 6,
+                    seed: 11204
+                }));
+                // Track 2: Outer Fern Kaleidoscope Border Ring (88 - 135mm)
+                state.tracks.push(createShapeTrack(fern, {
+                    name: 'Botanical Fern (Kaleido Border)',
+                    mode: 'kaleidoscope',
+                    baseColorIdx: 3,
+                    density: 24,
+                    baseSize: 34,
+                    minSpacing: 12,
+                    innerRadius: 88,
+                    outerRadius: 134,
+                    kaleidoWedges: 12,
+                    kaleidoRings: 1,
+                    kaleidoTwist: 15,
+                    kaleidoMirror: true,
+                    orientationMode: 'outward',
+                    rotJitter: 8,
+                    warpBend: 28,
+                    warpWave: 12,
+                    seed: 33819
+                }));
+                // Track 3: Cosmos Wildflower Meadow Scatter (Fills gaps across 25 - 125mm!)
+                state.tracks.push(createShapeTrack(wildflower, {
+                    name: 'Cosmos Daisy (Gap Filler Scatter)',
+                    mode: 'meadow',
+                    baseColorIdx: 2,
+                    density: 85,
+                    baseSize: 21,
+                    minSpacing: 14,
+                    innerRadius: 28,
+                    outerRadius: 122,
+                    orientationMode: 'random',
+                    rotJitter: 90,
+                    scaleJitter: 35,
+                    warpBend: 14,
+                    warpWave: 14,
+                    seed: 78412
+                }));
+            } else if (sceneKey === 'meadow_hierarchy') {
+                // 3-tier organic flower field with Hero Blooms, Medium Daisies, and Tiny Starflowers
+                state.tracks.push(createShapeTrack(lotus, {
+                    name: 'Hero Lotus Blooms',
+                    mode: 'meadow',
+                    baseColorIdx: 0,
+                    density: 18,
+                    baseSize: 42,
+                    minSpacing: 38,
+                    innerRadius: 0,
+                    outerRadius: 125,
+                    orientationMode: 'random',
+                    scaleJitter: 20,
+                    warpBend: 18,
+                    warpWave: 10,
+                    seed: 50129
+                }));
+                state.tracks.push(createShapeTrack(wildflower, {
+                    name: 'Medium Cosmos Clusters',
+                    mode: 'meadow',
+                    baseColorIdx: 1,
+                    density: 65,
+                    baseSize: 25,
+                    minSpacing: 20,
+                    innerRadius: 0,
+                    outerRadius: 132,
+                    orientationMode: 'random',
+                    scaleJitter: 30,
+                    warpBend: 22,
+                    warpWave: 14,
+                    seed: 60921
+                }));
+                state.tracks.push(createShapeTrack(sunburst, {
+                    name: 'Tiny Starflower Groundcover',
+                    mode: 'meadow',
+                    baseColorIdx: 4,
+                    density: 160,
+                    baseSize: 13,
+                    minSpacing: 9,
+                    innerRadius: 0,
+                    outerRadius: 136,
+                    orientationMode: 'random',
+                    scaleJitter: 35,
+                    warpBend: 10,
+                    warpWave: 8,
+                    seed: 91827
+                }));
+            } else if (sceneKey === 'sacred_kaleido') {
+                state.tracks.push(createShapeTrack(rosette, {
+                    name: 'Sacred Hexagram Core',
+                    mode: 'kaleidoscope',
+                    baseColorIdx: 1,
+                    density: 24,
+                    baseSize: 32,
+                    minSpacing: 10,
+                    innerRadius: 10,
+                    outerRadius: 70,
+                    kaleidoWedges: 12,
+                    kaleidoRings: 2,
+                    kaleidoTwist: 0,
+                    avoidSelf: false,
+                    warpBend: 0,
+                    warpWave: 0,
+                    seed: 20491
+                }));
+                state.tracks.push(createShapeTrack(sunburst, {
+                    name: 'Golden Spiral Sunbursts',
+                    mode: 'phyllotaxis',
+                    baseColorIdx: 4,
+                    density: 95,
+                    baseSize: 20,
+                    minSpacing: 12,
+                    innerRadius: 50,
+                    outerRadius: 134,
+                    orientationMode: 'outward',
+                    radialScale: -25,
+                    warpBend: 12,
+                    warpWave: 5,
+                    seed: 44102
+                }));
+            } else if (sceneKey === 'windswept_tapestry') {
+                state.tracks.push(createShapeTrack(fern, {
+                    name: 'Windswept Fern Canopy',
+                    mode: 'grid',
+                    baseColorIdx: 3,
+                    density: 55,
+                    baseSize: 34,
+                    minSpacing: 18,
+                    innerRadius: 0,
+                    outerRadius: 136,
+                    orientationMode: 'fixed',
+                    fixedAngle: 20,
+                    rotJitter: 18,
+                    posJitter: 9,
+                    warpBend: 65,
+                    warpWave: 22,
+                    seed: 88310
+                }));
+                state.tracks.push(createShapeTrack(wildflower, {
+                    name: 'Drifting Wild Blossoms',
+                    mode: 'meadow',
+                    baseColorIdx: 7,
+                    density: 90,
+                    baseSize: 19,
+                    minSpacing: 14,
+                    innerRadius: 0,
+                    outerRadius: 136,
+                    orientationMode: 'random',
+                    warpBend: 40,
+                    warpWave: 18,
+                    seed: 77421
+                }));
+            }
+
+            state.selectedTrackId = state.tracks[0].id;
+            syncInspectorFromActiveTrack();
+            rebuildAndRender();
+        }
+
+        /**************************************************************************
+         * INITIALIZE APPLICATION & BIND INTERACTIVE EVENTS
+         **************************************************************************/
+        window.addEventListener('DOMContentLoaded', () => {
+            // Pre-parse built-in motifs
+            BUILTIN_MOTIFS.forEach(item => {
+                try {
+                    const parsed = parseSVGGeometry(item.svgText, item.name);
+                    parsedBuiltInCache.set(item.key, parsed);
+                } catch (err) {
+                    console.error('Failed to parse built-in motif:', err);
+                }
+            });
+
+            // Populate Built-in Quick Adder Grid
+            const pickerGrid = document.getElementById('builtInPickerGrid');
+            BUILTIN_MOTIFS.forEach((item, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'px-2 py-1.5 rounded-lg bg-studio-card hover:bg-cyan-500/20 text-slate-200 hover:text-cyan-300 border border-studio-border text-left truncate text-[11px] transition';
+                btn.textContent = `+ ${item.name}`;
+                btn.addEventListener('click', () => {
+                    const geom = getBuiltInGeometry(item.key);
+                    if (!geom) return;
+                    const newTrack = createShapeTrack(geom, {
+                        baseColorIdx: state.tracks.length % 8
+                    });
+                    state.tracks.unshift(newTrack);
+                    state.selectedTrackId = newTrack.id;
+                    document.getElementById('builtInAdderBox').classList.add('hidden');
+                    syncInspectorFromActiveTrack();
+                    rebuildAndRender();
+                    document.getElementById('statusBanner').textContent = `Added track: ${newTrack.name}`;
+                });
+                pickerGrid.appendChild(btn);
+            });
+
+            document.getElementById('btnAddBuiltInMenu').addEventListener('click', () => {
+                document.getElementById('builtInAdderBox').classList.toggle('hidden');
+            });
+
+            document.getElementById('btnResetStarterTracks').addEventListener('click', () => {
+                loadMultiTrackScene('botanical_sanctuary');
+                document.getElementById('statusBanner').textContent = 'Reset to 3-Track Botanical Sanctuary';
+            });
+
+            document.getElementById('btnClearSolo').addEventListener('click', () => {
+                state.tracks.forEach(t => t.solo = false);
+                rebuildAndRender();
+            });
+
+            // Cross-Layer Collision Controls
+            document.getElementById('chkCrossLayerAvoid').addEventListener('change', (e) => {
+                state.crossLayerAvoid = e.target.checked;
+                rebuildAndRender();
+            });
+
+            document.getElementById('sliderGlobalPadding').addEventListener('input', (e) => {
+                state.globalPadding = parseInt(e.target.value, 10);
+                document.getElementById('valGlobalPadding').textContent = `${state.globalPadding > 0 ? '+' : ''}${state.globalPadding}%`;
+                rebuildAndRender();
+            });
+
+            // SVG File Upload & Drag-and-Drop -> Creates Individual Track per File
+            const fileInput = document.getElementById('svgFileInput');
+            const dropZone = document.getElementById('svgDropZone');
+
+            function handleSVGFiles(files) {
+                Array.from(files).forEach(file => {
+                    if (!file.name.toLowerCase().endsWith('.svg')) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const parsed = parseSVGGeometry(ev.target.result, file.name);
+                            const newTrack = createShapeTrack(parsed, {
+                                baseColorIdx: state.tracks.length % 8
+                            });
+                            state.tracks.unshift(newTrack);
+                            state.selectedTrackId = newTrack.id;
+                            syncInspectorFromActiveTrack();
+                            rebuildAndRender();
+                            document.getElementById('statusBanner').textContent = `Imported "${parsed.name}" as new Shape Layer Track`;
+                        } catch (err) {
+                            document.getElementById('statusBanner').textContent = `SVG Error: ${err.message}`;
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+            }
+
+            fileInput.addEventListener('change', (e) => handleSVGFiles(e.target.files));
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drop-active'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-active'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drop-active');
+                if (e.dataTransfer.files.length) handleSVGFiles(e.dataTransfer.files);
+            });
+
+            document.getElementById('bedPresetSelect').addEventListener('change', (e) => {
+                const val = e.target.value;
+                if (val === 'custom') return;
+                const [w, h] = val.split('x').map(Number);
+                state.canvasWidth = w;
+                state.canvasHeight = h;
+                document.getElementById('canvasWidthInput').value = w;
+                document.getElementById('canvasHeightInput').value = h;
+                fitBedToScreen();
+                rebuildAndRender();
+            });
+
+            document.getElementById('boundaryShapeSelect').addEventListener('change', (e) => {
+                state.boundaryShape = e.target.value;
+                rebuildAndRender();
+            });
+
+            document.getElementById('unitSelect').addEventListener('change', (e) => {
+                state.unit = e.target.value;
+                document.getElementById('statusBanner').textContent = `Export units set to ${state.unit}`;
+            });
+
+            ['canvasWidthInput', 'canvasHeightInput', 'canvasMarginInput'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    state.canvasWidth = Math.max(20, Number(document.getElementById('canvasWidthInput').value) || 300);
+                    state.canvasHeight = Math.max(20, Number(document.getElementById('canvasHeightInput').value) || 300);
+                    state.canvasMargin = Math.max(0, Number(document.getElementById('canvasMarginInput').value) || 0);
+                    rebuildAndRender();
+                });
+            });
+
+            document.getElementById('chkClipBoundary').addEventListener('change', (e) => {
+                state.clipBoundary = e.target.checked;
+                rebuildAndRender();
+            });
+
+            document.getElementById('chkExportFrame').addEventListener('change', (e) => {
+                state.exportFrame = e.target.checked;
+                renderViewport();
+            });
+
+            document.getElementById('sliderStrokeWidth').addEventListener('input', (e) => {
+                state.strokeWidth = parseFloat(e.target.value);
+                document.getElementById('valStrokeWidth').textContent = state.strokeWidth.toFixed(2) + 'mm';
+                renderViewport();
+            });
+
+            document.getElementById('surfaceThemeSelect').addEventListener('change', (e) => {
+                state.surfaceTheme = e.target.value;
+                renderViewport();
+            });
+
+            document.getElementById('sliderGlobalLens').addEventListener('input', (e) => {
+                state.globalLens = parseInt(e.target.value, 10);
+                document.getElementById('valGlobalLens').textContent = `${state.globalLens}%`;
+                rebuildAndRender();
+            });
+
+            document.getElementById('btnShowAllPalette').addEventListener('click', () => {
+                LIGHTBURN_PALETTE.forEach(l => l.active = true);
+                renderLayerPalette();
+                renderViewport();
+            });
+
+            document.getElementById('chkShowZoneGuides').addEventListener('change', (e) => {
+                state.showZoneGuides = e.target.checked;
+                renderViewport();
+            });
+
+            document.getElementById('chkGlobalLinkEdit').addEventListener('change', (e) => {
+                state.globalLinkEdit = e.target.checked;
+                const badge = document.getElementById('editScopeBadge');
+                if (state.globalLinkEdit) {
+                    badge.textContent = 'All Tracks Linked';
+                    badge.className = 'text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40';
+                } else {
+                    badge.textContent = 'Single Track';
+                    badge.className = 'text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/30';
+                }
+            });
+
+            document.getElementById('btnCopyTrackToAll').addEventListener('click', () => {
+                const src = getActiveTrack();
+                if (!src) return;
+                const keysToCopy = [
+                    'mode', 'density', 'baseSize', 'minSpacing', 'innerRadius', 'outerRadius', 'avoidSelf',
+                    'meadowClump', 'kaleidoWedges', 'kaleidoRings', 'kaleidoTwist', 'kaleidoMirror',
+                    'radialRings', 'radialAlternate', 'radialCenterStar', 'spiralAngle', 'gridHexShift',
+                    'posJitter', 'scaleJitter', 'radialScale', 'orientationMode', 'fixedAngle', 'rotJitter',
+                    'mirrorMode', 'mirrorProb', 'warpBend', 'warpWave', 'warpFreq', 'warpBulge', 'warpSquash'
+                ];
+                state.tracks.forEach(t => {
+                    if (t.id !== src.id && !t.locked) {
+                        keysToCopy.forEach(k => t[k] = src[k]);
+                    }
+                });
+                rebuildAndRender();
+                document.getElementById('statusBanner').textContent = `Copied "${src.name}" settings to all unlocked tracks`;
+            });
+
+            document.getElementById('trackColorModeSelect').addEventListener('change', (e) => {
+                updateTrackParam('colorMode', e.target.value);
+                rebuildAndRender();
+            });
+
+            document.getElementById('trackBaseColorSelect').addEventListener('change', (e) => {
+                const idx = parseInt(e.target.value, 10);
+                const active = getActiveTrack();
+                if (active && !active.locked) active.baseColorIdx = idx;
+                syncInspectorFromActiveTrack();
+                rebuildAndRender();
+            });
+
+            // Per-Track Array Mode Tabs
+            document.querySelectorAll('.mode-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const m = btn.getAttribute('data-mode');
+                    updateTrackParam('mode', m);
+                    syncInspectorFromActiveTrack();
+                    rebuildAndRender();
+                });
+            });
+
+            // Helper to bind inspector range sliders
+            function bindTrackSlider(sliderId, valId, propKey, formatter, isFloat = false) {
+                const el = document.getElementById(sliderId);
+                el.addEventListener('input', (e) => {
+                    const v = isFloat ? parseFloat(e.target.value) : parseInt(e.target.value, 10);
+                    updateTrackParam(propKey, v);
+                    document.getElementById(valId).textContent = formatter(v);
+                    rebuildAndRender();
+                });
+            }
+
+            bindTrackSlider('sliderDensity', 'valDensity', 'density', v => `${v} shapes`);
+            bindTrackSlider('sliderBaseSize', 'valBaseSize', 'baseSize', v => `${v} mm`, true);
+            bindTrackSlider('sliderMinSpacing', 'valMinSpacing', 'minSpacing', v => `${v} mm`, true);
+            bindTrackSlider('sliderInnerRadius', 'valInnerRadius', 'innerRadius', v => `${v} mm`);
+            bindTrackSlider('sliderOuterRadius', 'valOuterRadius', 'outerRadius', v => `${v} mm`);
+
+            bindTrackSlider('sliderMeadowClump', 'valMeadowClump', 'meadowClump', v => `${v}%`);
+            bindTrackSlider('sliderKaleidoWedges', 'valKaleidoWedges', 'kaleidoWedges', v => `${v}`);
+            bindTrackSlider('sliderKaleidoRings', 'valKaleidoRings', 'kaleidoRings', v => `${v}`);
+            bindTrackSlider('sliderKaleidoTwist', 'valKaleidoTwist', 'kaleidoTwist', v => `${v}°`);
+            bindTrackSlider('sliderRadialRings', 'valRadialRings', 'radialRings', v => `${v}`);
+            bindTrackSlider('sliderSpiralAngle', 'valSpiralAngle', 'spiralAngle', v => `${v.toFixed(1)}°`, true);
+            bindTrackSlider('sliderGridHexShift', 'valGridHexShift', 'gridHexShift', v => `${v}%`);
+
+            document.getElementById('chkKaleidoMirror').addEventListener('change', (e) => {
+                updateTrackParam('kaleidoMirror', e.target.checked);
+                rebuildAndRender();
+            });
+            document.getElementById('chkRadialAlternate').addEventListener('change', (e) => {
+                updateTrackParam('radialAlternate', e.target.checked);
+                rebuildAndRender();
+            });
+            document.getElementById('chkRadialCenterStar').addEventListener('change', (e) => {
+                updateTrackParam('radialCenterStar', e.target.checked);
+                rebuildAndRender();
+            });
+            document.getElementById('chkTrackAvoidSelf').addEventListener('change', (e) => {
+                updateTrackParam('avoidSelf', e.target.checked);
+                rebuildAndRender();
+            });
+
+            // Randomness & Orientation Bindings
+            bindTrackSlider('sliderPosJitter', 'valPosJitter', 'posJitter', v => `${v.toFixed(1)} mm`, true);
+            bindTrackSlider('sliderScaleJitter', 'valScaleJitter', 'scaleJitter', v => `${v}%`);
+            bindTrackSlider('sliderRadialScale', 'valRadialScale', 'radialScale', v => `${v > 0 ? '+' : ''}${v}%`);
+            bindTrackSlider('sliderFixedAngle', 'valFixedAngle', 'fixedAngle', v => `${v}°`);
+            bindTrackSlider('sliderRotJitter', 'valRotJitter', 'rotJitter', v => `±${v}°`);
+            bindTrackSlider('sliderMirrorProb', 'valMirrorProb', 'mirrorProb', v => `${v}%`);
+
+            document.getElementById('orientationModeSelect').addEventListener('change', (e) => {
+                updateTrackParam('orientationMode', e.target.value);
+                rebuildAndRender();
+            });
+            document.getElementById('mirrorModeSelect').addEventListener('change', (e) => {
+                updateTrackParam('mirrorMode', e.target.value);
+                rebuildAndRender();
+            });
+
+            document.getElementById('btnZeroTrackJitter').addEventListener('click', () => {
+                ['posJitter', 'scaleJitter', 'radialScale', 'rotJitter'].forEach(k => updateTrackParam(k, 0));
+                updateTrackParam('mirrorMode', 'none');
+                syncInspectorFromActiveTrack();
+                rebuildAndRender();
+            });
+
+            // Non-Linear Warping Bindings
+            bindTrackSlider('sliderWarpBend', 'valWarpBend', 'warpBend', v => `${v}%`);
+            bindTrackSlider('sliderWarpWave', 'valWarpWave', 'warpWave', v => `${v}%`);
+            bindTrackSlider('sliderWarpFreq', 'valWarpFreq', 'warpFreq', v => `${v.toFixed(1)}x`, true);
+            bindTrackSlider('sliderWarpBulge', 'valWarpBulge', 'warpBulge', v => `${v}%`);
+            bindTrackSlider('sliderWarpSquash', 'valWarpSquash', 'warpSquash', v => `${v}%`);
+
+            document.getElementById('btnZeroTrackWarp').addEventListener('click', () => {
+                ['warpBend', 'warpWave', 'warpBulge', 'warpSquash'].forEach(k => updateTrackParam(k, 0));
+                syncInspectorFromActiveTrack();
+                rebuildAndRender();
+            });
+
+            document.getElementById('trackSeedInput').addEventListener('change', (e) => {
+                const active = getActiveTrack();
+                if (active && !active.locked) {
+                    active.seed = parseInt(e.target.value, 10) || 1;
+                    rebuildAndRender();
+                }
+            });
+
+            document.getElementById('btnRerollTrackSeed').addEventListener('click', () => {
+                const active = getActiveTrack();
+                if (active && !active.locked) {
+                    active.seed = Math.floor(1000 + Math.random() * 90000);
+                    document.getElementById('trackSeedInput').value = active.seed;
+                    rebuildAndRender();
+                }
+            });
+
+            document.getElementById('btnRandomizeAllSeeds').addEventListener('click', () => {
+                state.tracks.forEach(t => {
+                    if (!t.locked) t.seed = Math.floor(1000 + Math.random() * 90000);
+                });
+                syncInspectorFromActiveTrack();
+                rebuildAndRender();
+                document.getElementById('statusBanner').textContent = 'Randomized seeds for all unlocked Shape Tracks';
+            });
+
+            document.getElementById('btnMutateSelectedTrack').addEventListener('click', () => {
+                const targets = state.globalLinkEdit ? state.tracks.filter(t => !t.locked) : [getActiveTrack()].filter(Boolean);
+                targets.forEach(t => {
+                    if (t.locked) return;
+                    t.seed = Math.floor(1000 + Math.random() * 90000);
+                    t.posJitter = Math.round(Math.random() * 12 * 2) / 2;
+                    t.scaleJitter = Math.floor(15 + Math.random() * 45);
+                    t.rotJitter = Math.floor(5 + Math.random() * 55);
+                    t.warpBend = Math.floor((Math.random() * 2 - 1) * 55);
+                    t.warpWave = Math.floor(5 + Math.random() * 30);
+                    t.warpSquash = Math.floor(Math.random() * 25);
+                });
+                syncInspectorFromActiveTrack();
+                rebuildAndRender();
+                document.getElementById('statusBanner').textContent = 'Mutated organic parameters & warping';
+            });
+
+            // Curated Multi-Track Scene Presets
+            document.querySelectorAll('.scene-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.scene-btn').forEach(b => {
+                        b.className = 'scene-btn px-2.5 py-1 rounded-lg hover:bg-studio-card text-slate-300 transition';
+                    });
+                    btn.className = 'scene-btn px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-medium transition hover:bg-cyan-500/30';
+                    loadMultiTrackScene(btn.getAttribute('data-scene'));
+                });
+            });
+
+            // Viewport Pan & Wheel Zoom
+            const wrapper = document.getElementById('canvasWrapper');
+            let isDragging = false, lastX = 0, lastY = 0;
+
+            wrapper.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                state.panX += (e.clientX - lastX);
+                state.panY += (e.clientY - lastY);
+                lastX = e.clientX;
+                lastY = e.clientY;
+                renderViewport();
+            });
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            wrapper.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const factor = e.deltaY < 0 ? 1.12 : 0.9;
+                state.zoom = Math.max(0.15, Math.min(12, state.zoom * factor));
+                document.getElementById('zoomReadout').textContent = Math.round(state.zoom * 100) + '%';
+                renderViewport();
+            }, { passive: false });
+
+            document.getElementById('btnZoomIn').addEventListener('click', () => {
+                state.zoom = Math.min(12, state.zoom * 1.2);
+                document.getElementById('zoomReadout').textContent = Math.round(state.zoom * 100) + '%';
+                renderViewport();
+            });
+            document.getElementById('btnZoomOut').addEventListener('click', () => {
+                state.zoom = Math.max(0.15, state.zoom / 1.2);
+                document.getElementById('zoomReadout').textContent = Math.round(state.zoom * 100) + '%';
+                renderViewport();
+            });
+            document.getElementById('btnFitScreen').addEventListener('click', fitBedToScreen);
+            window.addEventListener('resize', resizeViewportCanvas);
+
+            // SVG Export Actions
+            document.getElementById('btnExportMasterSVG').addEventListener('click', () => {
+                const svg = generateSVGExport();
+                triggerSVGDownload(svg, `FloraArray_Combined_${state.tracks.length}Tracks_${state.canvasWidth}x${state.canvasHeight}mm.svg`);
+                document.getElementById('statusBanner').textContent = 'Exported Combined Multi-Track SVG';
+            });
+
+            document.getElementById('btnExportSelectedTrackSVG').addEventListener('click', () => {
+                const active = getActiveTrack();
+                if (!active) return;
+                const svg = generateSVGExport({ onlyTrackId: active.id });
+                const safe = active.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+                triggerSVGDownload(svg, `FloraArray_Track_${safe}.svg`);
+                document.getElementById('statusBanner').textContent = `Exported Track SVG: ${active.name}`;
+            });
+
+            // Breakdown Modal (Export by Shape Track OR by LightBurn Color)
+            const modal = document.getElementById('layerExportModal');
+            document.getElementById('btnExportModalOpen').addEventListener('click', () => {
+                const list = document.getElementById('modalLayerDownloadList');
+                list.innerHTML = '';
+
+                // Section 1: By Shape Layer Track
+                const hdrTracks = document.createElement('div');
+                hdrTracks.className = 'text-[10px] font-mono uppercase text-cyan-400 pt-1';
+                hdrTracks.textContent = 'Export Individual Shape Layer Tracks:';
+                list.appendChild(hdrTracks);
+
+                state.compiledTracks.forEach((cTrack, idx) => {
+                    const lb = LIGHTBURN_PALETTE[cTrack.baseColorIdx] || LIGHTBURN_PALETTE[0];
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center justify-between p-2.5 rounded-xl bg-studio-card border border-studio-border';
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-3.5 h-3.5 rounded-full" style="background-color:${lb.previewDark}"></span>
+                            <div>
+                                <div class="font-semibold text-white text-xs">Layer ${idx + 1}: ${cTrack.trackName}</div>
+                                <div class="text-[10px] font-mono text-slate-400">${cTrack.instanceCount} instances · ${cTrack.pathCount} vector paths</div>
+                            </div>
+                        </div>
+                        <button class="px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 font-medium text-[11px] transition">
+                            Download Track .SVG
+                        </button>
+                    `;
+                    row.querySelector('button').addEventListener('click', () => {
+                        const svg = generateSVGExport({ onlyTrackId: cTrack.trackId });
+                        const safe = cTrack.trackName.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        triggerSVGDownload(svg, `FloraArray_Layer${idx + 1}_${safe}.svg`);
+                    });
+                    list.appendChild(row);
+                });
+
+                // Section 2: By LightBurn Color
+                const hdrColors = document.createElement('div');
+                hdrColors.className = 'text-[10px] font-mono uppercase text-amber-400 pt-3';
+                hdrColors.textContent = 'Export Isolated LightBurn Cut Colors (Across All Tracks):';
+                list.appendChild(hdrColors);
+
+                LIGHTBURN_PALETTE.forEach(layer => {
+                    let count = 0;
+                    state.compiledTracks.forEach(ct => {
+                        count += ct.polylines.filter(p => p.colorIdx === layer.idx).length;
+                    });
+                    if (count === 0) return;
+
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center justify-between p-2.5 rounded-xl bg-studio-card border border-studio-border';
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-3.5 h-3.5 rounded" style="background-color:${layer.previewDark}"></span>
+                            <div>
+                                <div class="font-semibold text-white text-xs">${layer.name} (${layer.hex})</div>
+                                <div class="text-[10px] font-mono text-slate-400">${count} vector paths across active tracks</div>
+                            </div>
+                        </div>
+                        <button class="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-medium text-[11px] transition">
+                            Download ${layer.id} .SVG
+                        </button>
+                    `;
+                    row.querySelector('button').addEventListener('click', () => {
+                        const svg = generateSVGExport({ onlyColorIdx: layer.idx });
+                        triggerSVGDownload(svg, `FloraArray_Color_${layer.id}.svg`);
+                    });
+                    list.appendChild(row);
+                });
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+
+            ['btnCloseLayerModal', 'btnCloseLayerModalBottom'].forEach(id => {
+                document.getElementById(id).addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                });
+            });
+
+            // Boot into initial 3-track Botanical Sanctuary composition
+            renderLayerPalette();
+            resizeViewportCanvas();
+            fitBedToScreen();
+            loadMultiTrackScene('botanical_sanctuary');
+        });
+    </script>
+</body>
+</html>
